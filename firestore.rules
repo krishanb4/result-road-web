@@ -1,0 +1,197 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Helper function to check if user is authenticated
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    // Helper function to get user role
+    function getUserRole() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
+    }
+    
+    // Helper function to check if user is admin
+    function isAdmin() {
+      return isAuthenticated() && getUserRole() == 'admin';
+    }
+    
+    // Helper function to check if user is instructor
+    function isInstructor() {
+      return isAuthenticated() && getUserRole() == 'instructor';
+    }
+    
+    // Helper function to check if user is participant
+    function isParticipant() {
+      return isAuthenticated() && getUserRole() == 'participant';
+    }
+    
+    // Helper function to check if user is support worker
+    function isSupportWorker() {
+      return isAuthenticated() && getUserRole() == 'support_worker';
+    }
+    
+    // Helper function to check if user is service provider
+    function isServiceProvider() {
+      return isAuthenticated() && getUserRole() == 'service_provider';
+    }
+    
+    // Helper function to check if user is fitness partner
+    function isFitnessPartner() {
+      return isAuthenticated() && getUserRole() == 'fitness_partner';
+    }
+
+    // Users collection
+    match /users/{userId} {
+      // Users can read and write their own profile
+      allow read, write: if isAuthenticated() && request.auth.uid == userId;
+      
+      // Admins can read all user profiles
+      allow read: if isAdmin();
+      
+      // Service providers can read their assigned participants and support workers
+      allow read: if isServiceProvider() && 
+        (resource.data.serviceProviderId == request.auth.uid || 
+         resource.data.role == 'support_worker');
+      
+      // Support workers can read their assigned participants
+      allow read: if isSupportWorker() && 
+        resource.data.supportWorkerId == request.auth.uid;
+      
+      // Instructors can read participants in their programs
+      allow read: if isInstructor() && resource.data.role == 'participant';
+      
+      // Fitness partners can read instructors at their facilities
+      allow read: if isFitnessPartner() && resource.data.role == 'instructor';
+    }
+
+    // Programs collection
+    match /programs/{programId} {
+      // All authenticated users can read programs
+      allow read: if isAuthenticated();
+      
+      // Admins and instructors can create and update programs
+      allow create, update: if isAdmin() || isInstructor();
+      
+      // Only admins can delete programs
+      allow delete: if isAdmin();
+    }
+
+    // Sessions collection
+    match /sessions/{sessionId} {
+      // All authenticated users can read sessions
+      allow read: if isAuthenticated();
+      
+      // Admins and instructors can create and update sessions
+      allow create, update: if isAdmin() || isInstructor();
+      
+      // Instructors can only update sessions they're assigned to
+      allow update: if isInstructor() && 
+        resource.data.instructorId == request.auth.uid;
+      
+      // Only admins can delete sessions
+      allow delete: if isAdmin();
+    }
+
+    // Facilities collection
+    match /facilities/{facilityId} {
+      // All authenticated users can read facilities
+      allow read: if isAuthenticated();
+      
+      // Admins and fitness partners can create and update facilities
+      allow create, update: if isAdmin() || isFitnessPartner();
+      
+      // Fitness partners can only update their own facilities
+      allow update: if isFitnessPartner() && 
+        resource.data.partnerId == request.auth.uid;
+      
+      // Only admins can delete facilities
+      allow delete: if isAdmin();
+    }
+
+    // Progress collection
+    match /progress/{progressId} {
+      // Participants can read their own progress
+      allow read: if isParticipant() && 
+        resource.data.participantId == request.auth.uid;
+      
+      // Instructors can read and write progress for their students
+      allow read, write: if isInstructor() && 
+        resource.data.instructorId == request.auth.uid;
+      
+      // Support workers can read progress for their assigned participants
+      allow read: if isSupportWorker() && 
+        get(/databases/$(database)/documents/users/$(resource.data.participantId)).data.supportWorkerId == request.auth.uid;
+      
+      // Service providers can read progress for their participants
+      allow read: if isServiceProvider() && 
+        get(/databases/$(database)/documents/users/$(resource.data.participantId)).data.serviceProviderId == request.auth.uid;
+      
+      // Admins can read and write all progress
+      allow read, write: if isAdmin();
+    }
+
+    // Care plans collection
+    match /carePlans/{carePlanId} {
+      // Participants can read their own care plans
+      allow read: if isParticipant() && 
+        resource.data.participantId == request.auth.uid;
+      
+      // Service providers can read and write care plans for their participants
+      allow read, write: if isServiceProvider() && 
+        resource.data.serviceProviderId == request.auth.uid;
+      
+      // Support workers can read care plans for their assigned participants
+      allow read: if isSupportWorker() && 
+        resource.data.supportWorkerId == request.auth.uid;
+      
+      // Admins can read and write all care plans
+      allow read, write: if isAdmin();
+    }
+
+    // Assignments collection (linking participants to programs, support workers, etc.)
+    match /assignments/{assignmentId} {
+      // Users can read assignments that involve them
+      allow read: if isAuthenticated() && 
+        (resource.data.participantId == request.auth.uid ||
+         resource.data.instructorId == request.auth.uid ||
+         resource.data.supportWorkerId == request.auth.uid ||
+         resource.data.serviceProviderId == request.auth.uid);
+      
+      // Admins, service providers, and instructors can create and update assignments
+      allow create, update: if isAdmin() || isServiceProvider() || isInstructor();
+      
+      // Only admins and service providers can delete assignments
+      allow delete: if isAdmin() || isServiceProvider();
+    }
+
+    // Notifications collection
+    match /notifications/{notificationId} {
+      // Users can read their own notifications
+      allow read: if isAuthenticated() && 
+        resource.data.userId == request.auth.uid;
+      
+      // Users can mark their own notifications as read
+      allow update: if isAuthenticated() && 
+        resource.data.userId == request.auth.uid &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['read', 'readAt']);
+      
+      // System can create notifications for users
+      allow create: if isAuthenticated();
+    }
+
+    // Reports collection
+    match /reports/{reportId} {
+      // Admins can read all reports
+      allow read, write: if isAdmin();
+      
+      // Service providers can read reports for their participants
+      allow read: if isServiceProvider() && 
+        resource.data.serviceProviderId == request.auth.uid;
+      
+      // Instructors can create and read reports for their sessions
+      allow read, create: if isInstructor() && 
+        resource.data.instructorId == request.auth.uid;
+    }
+  }
+}
