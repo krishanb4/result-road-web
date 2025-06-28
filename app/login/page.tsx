@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/contexts/AuthContext";
 import { Mail, Lock, Eye, EyeOff, Activity, ArrowLeft } from "lucide-react";
+import { log } from "node:console";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -23,6 +24,7 @@ export default function LoginPage() {
 
     try {
       await signIn(email, password);
+      console.log("here");
       router.push("/dashboard");
     } catch (err: any) {
       setError(err.message || "Failed to sign in");
