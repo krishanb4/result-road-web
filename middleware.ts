@@ -12,9 +12,9 @@ export function middleware(request: NextRequest) {
     // In a real app, you'd verify the Firebase token
     const authToken = request.cookies.get('auth-token');
 
-    if (!authToken && pathname.startsWith('/dashboard')) {
-        return NextResponse.redirect(new URL('/login', request.url));
-    }
+    // if (!authToken && pathname.startsWith('/dashboard')) {
+    //     return NextResponse.redirect(new URL('/login', request.url));
+    // }
 
     return NextResponse.next();
 }

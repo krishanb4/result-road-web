@@ -8,7 +8,10 @@ const programs = [
     description:
       "Build foundational strength through progressive resistance training.",
     features: ["Upper body focus", "Core stability", "Functional movement"],
-    levelColor: "bg-green-100 text-green-700 border-green-200",
+    colorClasses:
+      "bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-700",
+    levelClasses:
+      "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 border-emerald-300 dark:border-emerald-600",
   },
   {
     title: "Balance & Coordination",
@@ -17,7 +20,10 @@ const programs = [
     description:
       "Improve balance, coordination, and proprioception through targeted exercises.",
     features: ["Balance control", "Coordination drills", "Fall prevention"],
-    levelColor: "bg-yellow-100 text-yellow-700 border-yellow-200",
+    colorClasses:
+      "bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-700",
+    levelClasses:
+      "bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 border-amber-300 dark:border-amber-600",
   },
   {
     title: "Confidence Building",
@@ -26,19 +32,25 @@ const programs = [
     description:
       "Build self-confidence and social skills through group activities.",
     features: ["Social interaction", "Leadership skills", "Self-esteem"],
-    levelColor: "bg-blue-100 text-blue-700 border-blue-200",
+    colorClasses:
+      "bg-cyan-50 dark:bg-cyan-900/20 border-cyan-200 dark:border-cyan-700",
+    levelClasses:
+      "bg-cyan-100 dark:bg-cyan-900/30 text-cyan-700 dark:text-cyan-400 border-cyan-300 dark:border-cyan-600",
   },
 ];
 
 export function ProgramsSection() {
   return (
-    <section id="programs" className="py-20 md:py-28 bg-slate-50">
+    <section
+      id="programs"
+      className="py-20 md:py-28 bg-slate-50 dark:bg-slate-900 transition-all duration-300"
+    >
       <div className="max-w-6xl mx-auto px-6">
         <div className="text-center mb-16">
-          <h2 className="text-4xl md:text-5xl font-bold text-slate-900 mb-6">
+          <h2 className="text-4xl md:text-5xl font-bold text-slate-900 dark:text-white mb-6">
             Our Programs
           </h2>
-          <p className="text-xl text-slate-600 max-w-3xl mx-auto">
+          <p className="text-xl text-slate-600 dark:text-slate-300 max-w-3xl mx-auto">
             Structured 10-week programs designed to build strength,
             coordination, and confidence for participants of all ability levels.
           </p>
@@ -48,20 +60,20 @@ export function ProgramsSection() {
           {programs.map((program, index) => (
             <div
               key={index}
-              className="bg-white rounded-2xl p-8 shadow-lg border border-slate-100"
+              className={`${program.colorClasses} rounded-2xl p-8 border shadow-lg transition-all duration-300 hover:scale-105 hover:shadow-xl`}
             >
               <div className="flex items-center justify-between mb-6">
-                <h3 className="text-xl font-bold text-slate-900">
+                <h3 className="text-xl font-bold text-slate-900 dark:text-white">
                   {program.title}
                 </h3>
                 <span
-                  className={`px-3 py-1 w-auto rounded-full text-sm font-medium border ${program.levelColor}`}
+                  className={`px-3 py-1 rounded-full text-sm font-medium border ${program.levelClasses}`}
                 >
                   {program.level}
                 </span>
               </div>
 
-              <div className="flex items-center space-x-4 mb-6 text-slate-600">
+              <div className="flex items-center space-x-4 mb-6 text-slate-600 dark:text-slate-300">
                 <div className="flex items-center space-x-2">
                   <Clock className="w-4 h-4" />
                   <span className="text-sm">{program.duration}</span>
@@ -72,7 +84,7 @@ export function ProgramsSection() {
                 </div>
               </div>
 
-              <p className="text-slate-600 mb-6 leading-relaxed">
+              <p className="text-slate-600 dark:text-slate-300 mb-6 leading-relaxed">
                 {program.description}
               </p>
 
@@ -82,13 +94,15 @@ export function ProgramsSection() {
                     key={featureIndex}
                     className="flex items-center space-x-3"
                   >
-                    <CheckCircle className="w-4 h-4 text-green-500 flex-shrink-0" />
-                    <span className="text-slate-700">{feature}</span>
+                    <CheckCircle className="w-4 h-4 text-emerald-500 flex-shrink-0" />
+                    <span className="text-slate-700 dark:text-slate-200">
+                      {feature}
+                    </span>
                   </li>
                 ))}
               </ul>
 
-              <button className="w-full bg-slate-900 text-white font-semibold py-3 rounded-xl hover:bg-slate-800 transition-colors">
+              <button className="w-full bg-gradient-to-r from-emerald-500 to-cyan-500 hover:from-emerald-600 hover:to-cyan-600 text-white font-semibold py-3 rounded-xl transition-all duration-200">
                 Learn More
               </button>
             </div>
