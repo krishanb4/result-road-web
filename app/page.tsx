@@ -42,7 +42,6 @@ export default function HomePage() {
           <div className="w-8 h-8 border-4 border-primary-200 border-t-primary-600 rounded-full animate-spin"></div>
           <span className="text-slate-600 text-lg font-medium">Loading...</span>
         </div>
-        {process.env.NODE_ENV === "development" && <DebugAuth />}
       </div>
     );
   }

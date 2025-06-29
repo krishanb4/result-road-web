@@ -6,9 +6,10 @@ service cloud.firestore {
       return request.auth != null;
     }
     
-    // Helper function to get user role (with error handling)
+    // Helper function to get user role (with better error handling)
     function getUserRole() {
-      return isAuthenticated() ? 
+      return isAuthenticated() && 
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)) ? 
         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role : 
         null;
     }
@@ -21,41 +22,41 @@ service cloud.firestore {
     
     // Helper function to check if user is admin
     function isAdmin() {
-      return userExists() && getUserRole() == 'admin';
+      return getUserRole() == 'admin';
     }
     
     // Helper function to check if user is instructor
     function isInstructor() {
-      return userExists() && getUserRole() == 'instructor';
+      return getUserRole() == 'instructor';
     }
     
     // Helper function to check if user is participant
     function isParticipant() {
-      return userExists() && getUserRole() == 'participant';
+      return getUserRole() == 'participant';
     }
     
     // Helper function to check if user is support worker
     function isSupportWorker() {
-      return userExists() && getUserRole() == 'support_worker';
+      return getUserRole() == 'support_worker';
     }
     
     // Helper function to check if user is service provider
     function isServiceProvider() {
-      return userExists() && getUserRole() == 'service_provider';
+      return getUserRole() == 'service_provider';
     }
     
     // Helper function to check if user is fitness partner
     function isFitnessPartner() {
-      return userExists() && getUserRole() == 'fitness_partner';
+      return getUserRole() == 'fitness_partner';
     }
 
     // Users collection
     match /users/{userId} {
+      // CRITICAL: Allow initial user creation for authenticated users
+      allow create: if isAuthenticated() && request.auth.uid == userId;
+      
       // Users can read and write their own profile
       allow read, write: if isAuthenticated() && request.auth.uid == userId;
-      
-      // Allow creation during signup (when user document doesn't exist yet)
-      allow create: if isAuthenticated() && request.auth.uid == userId;
       
       // Admins can read all user profiles (only if admin user exists)
       allow read: if userExists() && isAdmin();
@@ -175,7 +176,7 @@ service cloud.firestore {
       allow read, write: if userExists() && isAdmin();
     }
 
-    // Assignments collection (linking participants to programs, support workers, etc.)
+    // Assignments collection
     match /assignments/{assignmentId} {
       // Users can read assignments that involve them
       allow read: if isAuthenticated() && 

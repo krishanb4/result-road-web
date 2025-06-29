@@ -137,3 +137,4 @@ Jun 30, 2025 1:56:56 AM com.google.cloud.datastore.emulator.firestore.webchannel
 INFO: channel closed
 Jun 30, 2025 1:56:56 AM com.google.cloud.datastore.emulator.firestore.webchannel.FirestoreV1WebChannelAdapter$FirestoreWriteHandler onClose
 INFO: channel closed
+*** shutting down gRPC server since JVM is shutting down
