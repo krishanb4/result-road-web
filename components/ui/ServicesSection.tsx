@@ -1,4 +1,8 @@
+// components/ui/ServicesSection.tsx
+"use client";
+
 import { Users, Shield, Activity } from "lucide-react";
+import { useSeasonalColors } from "@/contexts/ThemeContext";
 
 const services = [
   {
@@ -12,10 +16,6 @@ const services = [
       "Community connection",
     ],
     icon: Users,
-    colorClasses:
-      "bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-700",
-    iconClasses:
-      "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400",
   },
   {
     title: "For Service Providers",
@@ -28,10 +28,6 @@ const services = [
       "Staff assignment",
     ],
     icon: Shield,
-    colorClasses:
-      "bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-700",
-    iconClasses:
-      "bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400",
   },
   {
     title: "For Fitness Partners",
@@ -44,14 +40,12 @@ const services = [
       "Impact reporting",
     ],
     icon: Activity,
-    colorClasses:
-      "bg-cyan-50 dark:bg-cyan-900/20 border-cyan-200 dark:border-cyan-700",
-    iconClasses:
-      "bg-cyan-100 dark:bg-cyan-900/30 text-cyan-600 dark:text-cyan-400",
   },
 ];
 
 export function ServicesSection() {
+  const seasonalColors = useSeasonalColors();
+
   return (
     <section
       id="services"
@@ -69,37 +63,53 @@ export function ServicesSection() {
         </div>
 
         <div className="grid md:grid-cols-3 gap-8">
-          {services.map((service, index) => (
-            <div
-              key={index}
-              className={`${service.colorClasses} rounded-2xl p-8 border transition-all duration-300 hover:scale-105 hover:shadow-xl`}
-            >
+          {services.map((service, index) => {
+            // Create different opacity levels for variety while keeping the same color
+            const opacityLevels = ["15", "20", "25"];
+            const borderOpacityLevels = ["30", "40", "50"];
+
+            return (
               <div
-                className={`w-12 h-12 ${service.iconClasses} rounded-xl flex items-center justify-center mb-6`}
+                key={index}
+                className="rounded-2xl p-8 border transition-all duration-300 hover:scale-105 hover:shadow-xl"
+                style={{
+                  backgroundColor: `${seasonalColors.primary}${opacityLevels[index]}`,
+                  borderColor: `${seasonalColors.primary}${borderOpacityLevels[index]}`,
+                }}
               >
-                <service.icon className="w-6 h-6" />
+                <div
+                  className="w-12 h-12 rounded-xl flex items-center justify-center mb-6"
+                  style={{
+                    backgroundColor: seasonalColors.primary,
+                  }}
+                >
+                  <service.icon className="w-6 h-6 text-white" />
+                </div>
+                <h3 className="text-2xl font-bold text-slate-900 dark:text-white mb-4">
+                  {service.title}
+                </h3>
+                <p className="text-slate-600 dark:text-slate-300 mb-6 leading-relaxed">
+                  {service.description}
+                </p>
+                <ul className="space-y-3">
+                  {service.features.map((feature, featureIndex) => (
+                    <li
+                      key={featureIndex}
+                      className="flex items-center space-x-3"
+                    >
+                      <div
+                        className="w-2 h-2 rounded-full flex-shrink-0"
+                        style={{ backgroundColor: seasonalColors.primary }}
+                      />
+                      <span className="text-slate-700 dark:text-slate-200 font-medium">
+                        {feature}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
               </div>
-              <h3 className="text-2xl font-bold text-slate-900 dark:text-white mb-4">
-                {service.title}
-              </h3>
-              <p className="text-slate-600 dark:text-slate-300 mb-6 leading-relaxed">
-                {service.description}
-              </p>
-              <ul className="space-y-3">
-                {service.features.map((feature, featureIndex) => (
-                  <li
-                    key={featureIndex}
-                    className="flex items-center space-x-3"
-                  >
-                    <div className="w-2 h-2 bg-gradient-to-r from-emerald-400 to-cyan-400 rounded-full flex-shrink-0" />
-                    <span className="text-slate-700 dark:text-slate-200 font-medium">
-                      {feature}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
     </section>

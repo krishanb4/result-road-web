@@ -1,7 +1,6 @@
 "use client";
 
 import { useAuth } from "@/contexts/AuthContext";
-import { GlassCard } from "@/components/ui/GlassCard";
 import {
   TrendingUp,
   Target,
@@ -144,8 +143,10 @@ function ParticipantProgress({
     <div className="space-y-8">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold text-white mb-2">My Progress</h1>
-        <p className="text-white/70">
+        <h1 className="text-3xl font-bold text-slate-900 dark:text-white mb-2 transition-colors duration-300">
+          My Progress
+        </h1>
+        <p className="text-slate-600 dark:text-slate-300 transition-colors duration-300">
           Track your journey and celebrate achievements
         </p>
       </div>
@@ -153,65 +154,79 @@ function ParticipantProgress({
       {/* Progress Metrics */}
       <div className="grid md:grid-cols-3 gap-6">
         {Object.entries(data.metrics).map(([key, metric]) => (
-          <GlassCard key={key} className="p-6" hover>
+          <div
+            key={key}
+            className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm border border-slate-200/50 dark:border-slate-700/50 p-6 rounded-xl shadow-sm hover:shadow-md transition-all duration-300 hover:scale-105"
+          >
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-white capitalize">
+              <h3 className="text-lg font-semibold text-slate-900 dark:text-white capitalize transition-colors duration-300">
                 {key}
               </h3>
               <TrendingUp
-                className={`w-5 h-5 ${
-                  metric.trend === "up" ? "text-green-400" : "text-red-400"
+                className={`w-5 h-5 transition-colors duration-300 ${
+                  metric.trend === "up"
+                    ? "text-emerald-500 dark:text-emerald-400"
+                    : "text-red-500 dark:text-red-400"
                 }`}
               />
             </div>
             <div className="space-y-2">
               <div className="flex items-end space-x-2">
-                <span className="text-3xl font-bold text-white">
+                <span className="text-3xl font-bold text-slate-900 dark:text-white transition-colors duration-300">
                   {metric.current}%
                 </span>
-                <span className="text-green-400 text-sm font-medium">
+                <span className="text-emerald-500 dark:text-emerald-400 text-sm font-medium transition-colors duration-300">
                   {metric.change}
                 </span>
               </div>
-              <div className="w-full bg-white/10 rounded-full h-2">
+              <div className="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-2 transition-colors duration-300">
                 <div
-                  className="bg-gradient-to-r from-blue-500 to-purple-600 h-2 rounded-full transition-all duration-300"
+                  className="bg-gradient-to-r from-emerald-500 to-blue-600 dark:from-emerald-400 dark:to-blue-500 h-2 rounded-full transition-all duration-300"
                   style={{ width: `${metric.current}%` }}
                 ></div>
               </div>
             </div>
-          </GlassCard>
+          </div>
         ))}
       </div>
 
       {/* Current Goals */}
-      <GlassCard className="p-6">
-        <h3 className="text-xl font-semibold text-white mb-6 flex items-center">
-          <Target className="w-6 h-6 mr-2 text-blue-400" />
+      <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm border border-slate-200/50 dark:border-slate-700/50 p-6 rounded-xl shadow-sm transition-all duration-300">
+        <h3 className="text-xl font-semibold text-slate-900 dark:text-white mb-6 flex items-center transition-colors duration-300">
+          <Target className="w-6 h-6 mr-2 text-emerald-600 dark:text-emerald-400 transition-colors duration-300" />
           Current Goals
         </h3>
         <div className="space-y-4">
           {data.currentGoals.map((goal) => (
-            <div key={goal.id} className="bg-white/5 rounded-lg p-4">
+            <div
+              key={goal.id}
+              className="bg-slate-50 dark:bg-slate-700 rounded-lg p-4 transition-colors duration-300"
+            >
               <div className="flex justify-between items-start mb-3">
                 <div>
-                  <h4 className="text-white font-medium">{goal.title}</h4>
-                  <p className="text-white/60 text-sm">{goal.target}</p>
+                  <h4 className="text-slate-900 dark:text-white font-medium transition-colors duration-300">
+                    {goal.title}
+                  </h4>
+                  <p className="text-slate-600 dark:text-slate-400 text-sm transition-colors duration-300">
+                    {goal.target}
+                  </p>
                 </div>
-                <span className="text-sm text-white/60">
+                <span className="text-sm text-slate-500 dark:text-slate-400 transition-colors duration-300">
                   Due: {goal.deadline}
                 </span>
               </div>
               <div className="space-y-2">
                 <div className="flex justify-between">
-                  <span className="text-white/70 text-sm">Progress</span>
-                  <span className="text-white font-medium">
+                  <span className="text-slate-600 dark:text-slate-400 text-sm transition-colors duration-300">
+                    Progress
+                  </span>
+                  <span className="text-slate-900 dark:text-white font-medium transition-colors duration-300">
                     {goal.progress}%
                   </span>
                 </div>
-                <div className="w-full bg-white/10 rounded-full h-2">
+                <div className="w-full bg-slate-200 dark:bg-slate-600 rounded-full h-2 transition-colors duration-300">
                   <div
-                    className="bg-gradient-to-r from-green-500 to-blue-500 h-2 rounded-full transition-all duration-300"
+                    className="bg-gradient-to-r from-emerald-500 to-blue-500 dark:from-emerald-400 dark:to-blue-400 h-2 rounded-full transition-all duration-300"
                     style={{ width: `${goal.progress}%` }}
                   ></div>
                 </div>
@@ -219,45 +234,47 @@ function ParticipantProgress({
             </div>
           ))}
         </div>
-      </GlassCard>
+      </div>
 
       {/* Recent Sessions & Achievements */}
       <div className="grid lg:grid-cols-2 gap-8">
         {/* Recent Sessions */}
-        <GlassCard className="p-6">
-          <h3 className="text-xl font-semibold text-white mb-6 flex items-center">
-            <Activity className="w-6 h-6 mr-2 text-blue-400" />
+        <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm border border-slate-200/50 dark:border-slate-700/50 p-6 rounded-xl shadow-sm transition-all duration-300">
+          <h3 className="text-xl font-semibold text-slate-900 dark:text-white mb-6 flex items-center transition-colors duration-300">
+            <Activity className="w-6 h-6 mr-2 text-emerald-600 dark:text-emerald-400 transition-colors duration-300" />
             Recent Sessions
           </h3>
           <div className="space-y-4">
             {data.recentSessions.map((session, index) => (
               <div
                 key={index}
-                className="flex items-center justify-between p-4 bg-white/5 rounded-lg"
+                className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-700 rounded-lg transition-colors duration-300"
               >
                 <div>
-                  <div className="text-white font-medium">
+                  <div className="text-slate-900 dark:text-white font-medium transition-colors duration-300">
                     {session.program}
                   </div>
-                  <div className="text-white/60 text-sm">
+                  <div className="text-slate-600 dark:text-slate-400 text-sm transition-colors duration-300">
                     {session.instructor} • {session.date}
                   </div>
                 </div>
                 <div className="text-right">
-                  <div className="text-lg font-bold text-white">
+                  <div className="text-lg font-bold text-slate-900 dark:text-white transition-colors duration-300">
                     {session.score}/10
                   </div>
-                  <div className="text-white/60 text-sm">Score</div>
+                  <div className="text-slate-600 dark:text-slate-400 text-sm transition-colors duration-300">
+                    Score
+                  </div>
                 </div>
               </div>
             ))}
           </div>
-        </GlassCard>
+        </div>
 
         {/* Achievements */}
-        <GlassCard className="p-6">
-          <h3 className="text-xl font-semibold text-white mb-6 flex items-center">
-            <Award className="w-6 h-6 mr-2 text-blue-400" />
+        <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm border border-slate-200/50 dark:border-slate-700/50 p-6 rounded-xl shadow-sm transition-all duration-300">
+          <h3 className="text-xl font-semibold text-slate-900 dark:text-white mb-6 flex items-center transition-colors duration-300">
+            <Award className="w-6 h-6 mr-2 text-emerald-600 dark:text-emerald-400 transition-colors duration-300" />
             Recent Achievements
           </h3>
           <div className="space-y-4">
@@ -266,16 +283,16 @@ function ParticipantProgress({
               return (
                 <div
                   key={index}
-                  className="flex items-center space-x-4 p-4 bg-white/5 rounded-lg"
+                  className="flex items-center space-x-4 p-4 bg-slate-50 dark:bg-slate-700 rounded-lg transition-colors duration-300"
                 >
-                  <div className="bg-yellow-500/20 p-3 rounded-lg">
-                    <Icon className="w-6 h-6 text-yellow-400" />
+                  <div className="bg-amber-100 dark:bg-amber-900/30 p-3 rounded-lg transition-colors duration-300">
+                    <Icon className="w-6 h-6 text-amber-600 dark:text-amber-400 transition-colors duration-300" />
                   </div>
                   <div>
-                    <div className="text-white font-medium">
+                    <div className="text-slate-900 dark:text-white font-medium transition-colors duration-300">
                       {achievement.title}
                     </div>
-                    <div className="text-white/60 text-sm">
+                    <div className="text-slate-600 dark:text-slate-400 text-sm transition-colors duration-300">
                       {achievement.date}
                     </div>
                   </div>
@@ -283,7 +300,7 @@ function ParticipantProgress({
               );
             })}
           </div>
-        </GlassCard>
+        </div>
       </div>
     </div>
   );
@@ -298,64 +315,52 @@ function InstructorProgress({
     <div className="space-y-8">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold text-white mb-2">
+        <h1 className="text-3xl font-bold text-slate-900 dark:text-white mb-2 transition-colors duration-300">
           Student Progress Overview
         </h1>
-        <p className="text-white/70">
+        <p className="text-slate-600 dark:text-slate-300 transition-colors duration-300">
           Monitor and track your students' development
         </p>
       </div>
 
       {/* Program Stats */}
       <div className="grid md:grid-cols-4 gap-6">
-        <GlassCard className="p-6" hover>
+        <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm border border-slate-200/50 dark:border-slate-700/50 p-6 rounded-xl shadow-sm hover:shadow-md transition-all duration-300 hover:scale-105">
           <div className="text-center">
-            <div className="text-3xl font-bold text-white mb-2">
-              {data.programStats.totalStudents}
-            </div>
-            <div className="text-white/70">Total Students</div>
-          </div>
-        </GlassCard>
-        <GlassCard className="p-6" hover>
-          <div className="text-center">
-            <div className="text-3xl font-bold text-white mb-2">
-              {data.programStats.averageProgress}%
-            </div>
-            <div className="text-white/70">Average Progress</div>
-          </div>
-        </GlassCard>
-        <GlassCard className="p-6" hover>
-          <div className="text-center">
-            <div className="text-3xl font-bold text-white mb-2">
+            <div className="text-3xl font-bold text-slate-900 dark:text-white mb-2 transition-colors duration-300">
               {data.programStats.completionRate}%
             </div>
-            <div className="text-white/70">Completion Rate</div>
+            <div className="text-slate-600 dark:text-slate-400 transition-colors duration-300">
+              Completion Rate
+            </div>
           </div>
-        </GlassCard>
-        <GlassCard className="p-6" hover>
+        </div>
+        <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm border border-slate-200/50 dark:border-slate-700/50 p-6 rounded-xl shadow-sm hover:shadow-md transition-all duration-300 hover:scale-105">
           <div className="text-center">
-            <div className="text-3xl font-bold text-white mb-2">
+            <div className="text-3xl font-bold text-slate-900 dark:text-white mb-2 transition-colors duration-300">
               {data.programStats.sessionsSinceLastWeek}
             </div>
-            <div className="text-white/70">Sessions This Week</div>
+            <div className="text-slate-600 dark:text-slate-400 transition-colors duration-300">
+              Sessions This Week
+            </div>
           </div>
-        </GlassCard>
+        </div>
       </div>
 
       {/* Student Progress */}
-      <GlassCard className="p-6">
-        <h3 className="text-xl font-semibold text-white mb-6">
+      <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm border border-slate-200/50 dark:border-slate-700/50 p-6 rounded-xl shadow-sm transition-all duration-300">
+        <h3 className="text-xl font-semibold text-slate-900 dark:text-white mb-6 transition-colors duration-300">
           Student Progress
         </h3>
         <div className="space-y-4">
           {data.studentProgress.map((student, index) => (
             <div
               key={index}
-              className="flex items-center justify-between p-4 bg-white/5 rounded-lg"
+              className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-700 rounded-lg transition-colors duration-300"
             >
               <div className="flex items-center space-x-4">
-                <div className="w-10 h-10 bg-white/10 rounded-full flex items-center justify-center">
-                  <span className="text-white font-medium">
+                <div className="w-10 h-10 bg-slate-200 dark:bg-slate-600 rounded-full flex items-center justify-center transition-colors duration-300">
+                  <span className="text-slate-900 dark:text-white font-medium transition-colors duration-300">
                     {student.name
                       .split(" ")
                       .map((n) => n[0])
@@ -363,23 +368,27 @@ function InstructorProgress({
                   </span>
                 </div>
                 <div>
-                  <div className="text-white font-medium">{student.name}</div>
-                  <div className="text-white/60 text-sm">{student.program}</div>
+                  <div className="text-slate-900 dark:text-white font-medium transition-colors duration-300">
+                    {student.name}
+                  </div>
+                  <div className="text-slate-600 dark:text-slate-400 text-sm transition-colors duration-300">
+                    {student.program}
+                  </div>
                 </div>
               </div>
               <div className="flex items-center space-x-4">
                 <div className="text-right">
-                  <div className="text-white font-medium">
+                  <div className="text-slate-900 dark:text-white font-medium transition-colors duration-300">
                     {student.progress}% Complete
                   </div>
-                  <div className="text-white/60 text-sm">
+                  <div className="text-slate-600 dark:text-slate-400 text-sm transition-colors duration-300">
                     Last: {student.lastSession}
                   </div>
                 </div>
                 <div className="w-20">
-                  <div className="w-full bg-white/10 rounded-full h-2">
+                  <div className="w-full bg-slate-200 dark:bg-slate-600 rounded-full h-2 transition-colors duration-300">
                     <div
-                      className="bg-gradient-to-r from-green-500 to-blue-500 h-2 rounded-full"
+                      className="bg-gradient-to-r from-emerald-500 to-blue-500 dark:from-emerald-400 dark:to-blue-400 h-2 rounded-full transition-all duration-300"
                       style={{ width: `${student.progress}%` }}
                     ></div>
                   </div>
@@ -388,7 +397,7 @@ function InstructorProgress({
             </div>
           ))}
         </div>
-      </GlassCard>
+      </div>
     </div>
   );
 }

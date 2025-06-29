@@ -1,10 +1,13 @@
+// login/page.tsx
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/contexts/AuthContext";
-import { Mail, Lock, Eye, EyeOff, Activity, ArrowLeft } from "lucide-react";
+import { Mail, Lock, Eye, EyeOff, ArrowLeft } from "lucide-react";
+import { Logo } from "@/components/ui/Logo";
+import { useSeasonalColors } from "@/contexts/ThemeContext";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -12,9 +15,18 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [emailFocused, setEmailFocused] = useState(false);
+  const [passwordFocused, setPasswordFocused] = useState(false);
+  const [mounted, setMounted] = useState(false);
 
   const { signIn } = useAuth();
   const router = useRouter();
+  const seasonalColors = useSeasonalColors();
+
+  // Handle client-side mounting
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -23,7 +35,6 @@ export default function LoginPage() {
 
     try {
       await signIn(email, password);
-      console.log("here");
       router.push("/dashboard");
     } catch (err: any) {
       setError(err.message || "Failed to sign in");
@@ -32,61 +43,86 @@ export default function LoginPage() {
     }
   };
 
+  // Show loading skeleton on server-side render
+  if (!mounted) {
+    return (
+      <div className="min-h-screen bg-slate-50 dark:bg-slate-900 flex">
+        <div className="hidden lg:flex lg:w-1/2 bg-slate-200 dark:bg-slate-700 animate-pulse" />
+        <div className="w-full lg:w-1/2 flex items-center justify-center p-8 bg-white dark:bg-slate-800">
+          <div className="w-full max-w-md space-y-6">
+            <div className="h-8 bg-slate-200 dark:bg-slate-700 rounded animate-pulse" />
+            <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded animate-pulse" />
+            <div className="h-12 bg-slate-200 dark:bg-slate-700 rounded animate-pulse" />
+            <div className="h-12 bg-slate-200 dark:bg-slate-700 rounded animate-pulse" />
+            <div className="h-12 bg-slate-200 dark:bg-slate-700 rounded animate-pulse" />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-900 flex transition-all duration-300">
       {/* Left Side - Branding */}
-      <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-emerald-600 via-emerald-500 to-cyan-600 p-12 flex-col justify-between relative overflow-hidden">
+      <div className="hidden lg:flex lg:w-1/2 p-12 flex-col justify-between relative overflow-hidden">
+        {/* Background with seasonal gradient */}
+        <div
+          className="absolute inset-0"
+          style={{
+            background: `linear-gradient(135deg, ${seasonalColors.primary}, ${seasonalColors.primaryHover})`,
+          }}
+        />
+
         {/* Animated Background Elements */}
         <div className="absolute inset-0 opacity-20">
           <div className="absolute top-0 left-0 w-96 h-96 bg-white rounded-full -translate-x-48 -translate-y-48 animate-pulse"></div>
           <div className="absolute bottom-0 right-0 w-96 h-96 bg-white rounded-full translate-x-48 translate-y-48 animate-pulse"></div>
-          <div className="absolute top-1/2 left-1/2 w-64 h-64 bg-cyan-300/30 rounded-full -translate-x-32 -translate-y-32 animate-bounce"></div>
+          <div className="absolute top-1/2 left-1/2 w-64 h-64 bg-white/20 rounded-full -translate-x-32 -translate-y-32 animate-bounce"></div>
         </div>
 
         {/* Glassmorphism overlay */}
-        <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/10 to-cyan-500/10 backdrop-blur-sm"></div>
+        <div className="absolute inset-0 bg-black/10 backdrop-blur-sm"></div>
 
         <div className="relative z-10">
-          <div className="flex items-center space-x-3 mb-16">
-            <div className="w-12 h-12 bg-white/95 backdrop-blur-md rounded-2xl flex items-center justify-center shadow-lg hover:scale-110 transition-transform duration-300">
-              <Activity className="w-7 h-7 text-emerald-600" />
-            </div>
-            <span className="text-3xl font-bold text-white drop-shadow-lg">
-              Result Road
-            </span>
+          <div className="mb-16">
+            <Logo size="lg" variant="white" />
           </div>
 
           <div className="space-y-6">
             <h1 className="text-5xl font-bold text-white mb-6 leading-tight drop-shadow-lg">
               Welcome back to your journey
             </h1>
-            <p className="text-xl text-emerald-100 leading-relaxed">
+            <p className="text-xl text-white/90 leading-relaxed drop-shadow-sm">
               Continue building confidence, strength, and connections in our
               supportive community.
             </p>
 
             {/* Feature highlights */}
             <div className="grid grid-cols-2 gap-4 mt-8">
-              <div className="bg-white/10 backdrop-blur-md rounded-xl p-4 border border-white/20">
-                <div className="text-2xl font-bold text-white">247+</div>
-                <div className="text-emerald-100 text-sm">Active Members</div>
+              <div className="bg-white/20 backdrop-blur-md rounded-xl p-4 border border-white/30 shadow-lg">
+                <div className="text-2xl font-bold text-white drop-shadow-sm">
+                  247+
+                </div>
+                <div className="text-white/90 text-sm">Active Members</div>
               </div>
-              <div className="bg-white/10 backdrop-blur-md rounded-xl p-4 border border-white/20">
-                <div className="text-2xl font-bold text-white">15+</div>
-                <div className="text-emerald-100 text-sm">Programs</div>
+              <div className="bg-white/20 backdrop-blur-md rounded-xl p-4 border border-white/30 shadow-lg">
+                <div className="text-2xl font-bold text-white drop-shadow-sm">
+                  15+
+                </div>
+                <div className="text-white/90 text-sm">Programs</div>
               </div>
             </div>
           </div>
         </div>
 
         <div className="relative z-10">
-          <div className="bg-white/10 backdrop-blur-md rounded-2xl p-6 border border-white/20 shadow-xl">
+          <div className="bg-white/20 backdrop-blur-md rounded-2xl p-6 border border-white/30 shadow-xl">
             <blockquote className="text-white">
-              <p className="text-lg mb-4 font-medium">
+              <p className="text-lg mb-4 font-medium drop-shadow-sm">
                 "Result Road has transformed not just my physical strength, but
                 my confidence and sense of belonging in the community."
               </p>
-              <footer className="text-emerald-200">
+              <footer className="text-white/90">
                 <cite>— Sarah M., Program Participant</cite>
               </footer>
             </blockquote>
@@ -95,16 +131,11 @@ export default function LoginPage() {
       </div>
 
       {/* Right Side - Login Form */}
-      <div className="w-full lg:w-1/2 flex items-center justify-center p-8">
+      <div className="w-full lg:w-1/2 flex items-center justify-center p-8 bg-white dark:bg-slate-800">
         <div className="w-full max-w-md">
           {/* Mobile Logo */}
-          <div className="lg:hidden flex items-center space-x-2 mb-8">
-            <div className="w-10 h-10 bg-gradient-to-r from-emerald-500 to-cyan-500 rounded-xl flex items-center justify-center shadow-lg">
-              <Activity className="w-6 h-6 text-white" />
-            </div>
-            <span className="text-2xl font-bold text-slate-900 dark:text-white">
-              Result Road
-            </span>
+          <div className="lg:hidden mb-8">
+            <Logo size="md" />
           </div>
 
           <div className="text-center mb-8">
@@ -131,12 +162,24 @@ export default function LoginPage() {
                 Email Address
               </label>
               <div className="relative group">
-                <Mail className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-emerald-500 transition-colors" />
+                <Mail
+                  className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 transition-colors"
+                  style={{
+                    color: emailFocused ? seasonalColors.primary : "#94a3b8",
+                  }}
+                />
                 <input
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full pl-12 pr-4 py-4 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-xl text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all duration-200 hover:border-emerald-300"
+                  onFocus={() => setEmailFocused(true)}
+                  onBlur={() => setEmailFocused(false)}
+                  className="w-full pl-12 pr-4 py-4 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-xl text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:border-transparent transition-all duration-200"
+                  style={
+                    {
+                      "--tw-ring-color": seasonalColors.primary,
+                    } as React.CSSProperties
+                  }
                   placeholder="Enter your email"
                   required
                 />
@@ -148,19 +191,34 @@ export default function LoginPage() {
                 Password
               </label>
               <div className="relative group">
-                <Lock className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-emerald-500 transition-colors" />
+                <Lock
+                  className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 transition-colors"
+                  style={{
+                    color: passwordFocused ? seasonalColors.primary : "#94a3b8",
+                  }}
+                />
                 <input
                   type={showPassword ? "text" : "password"}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full pl-12 pr-12 py-4 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-xl text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all duration-200 hover:border-emerald-300"
+                  onFocus={() => setPasswordFocused(true)}
+                  onBlur={() => setPasswordFocused(false)}
+                  className="w-full pl-12 pr-12 py-4 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-xl text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:border-transparent transition-all duration-200"
+                  style={
+                    {
+                      "--tw-ring-color": seasonalColors.primary,
+                    } as React.CSSProperties
+                  }
                   placeholder="Enter your password"
                   required
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-4 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-emerald-500 transition-colors"
+                  className="absolute right-4 top-1/2 transform -translate-y-1/2 transition-colors hover:scale-110"
+                  style={{
+                    color: showPassword ? seasonalColors.primary : "#94a3b8",
+                  }}
                 >
                   {showPassword ? (
                     <EyeOff className="w-5 h-5" />
@@ -175,24 +233,50 @@ export default function LoginPage() {
               <label className="flex items-center group cursor-pointer">
                 <input
                   type="checkbox"
-                  className="w-4 h-4 text-emerald-600 bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 rounded focus:ring-emerald-500 focus:ring-2"
+                  className="w-4 h-4 bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 rounded transition-colors"
+                  style={{
+                    accentColor: seasonalColors.primary,
+                  }}
                 />
                 <span className="ml-2 text-sm text-slate-600 dark:text-slate-300 group-hover:text-slate-800 dark:group-hover:text-slate-200 transition-colors">
                   Remember me
                 </span>
               </label>
-              <a
-                href="#"
-                className="text-sm text-emerald-600 hover:text-emerald-700 dark:text-emerald-400 dark:hover:text-emerald-300 font-medium transition-colors"
+              <Link
+                href="/forgot-password"
+                className="text-sm font-medium transition-colors hover:underline"
+                style={{
+                  color: seasonalColors.primary,
+                }}
               >
                 Forgot password?
-              </a>
+              </Link>
             </div>
 
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-gradient-to-r from-emerald-500 via-emerald-600 to-cyan-500 text-white font-semibold py-4 rounded-xl hover:from-emerald-600 hover:via-emerald-700 hover:to-cyan-600 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 dark:focus:ring-offset-slate-900 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-lg hover:shadow-xl hover:scale-[1.02] transform"
+              className="w-full text-white font-semibold py-4 rounded-xl focus:outline-none focus:ring-2 focus:ring-offset-2 dark:focus:ring-offset-slate-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-lg hover:shadow-xl hover:scale-[1.02] transform"
+              style={
+                {
+                  backgroundColor: loading
+                    ? seasonalColors.primary
+                    : seasonalColors.primary,
+                  "--tw-ring-color": seasonalColors.primary,
+                } as React.CSSProperties
+              }
+              onMouseEnter={(e) => {
+                if (!loading) {
+                  e.currentTarget.style.backgroundColor =
+                    seasonalColors.primaryHover;
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (!loading) {
+                  e.currentTarget.style.backgroundColor =
+                    seasonalColors.primary;
+                }
+              }}
             >
               {loading ? (
                 <div className="flex items-center justify-center space-x-2">
@@ -210,7 +294,10 @@ export default function LoginPage() {
               Don't have an account?{" "}
               <Link
                 href="/signup"
-                className="text-emerald-600 hover:text-emerald-700 dark:text-emerald-400 dark:hover:text-emerald-300 font-semibold transition-colors"
+                className="font-semibold transition-colors hover:underline"
+                style={{
+                  color: seasonalColors.primary,
+                }}
               >
                 Sign up here
               </Link>

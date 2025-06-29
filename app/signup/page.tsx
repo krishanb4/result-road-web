@@ -1,9 +1,12 @@
+// signup/page.tsx
 "use client";
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth, UserRole } from "@/contexts/AuthContext";
+import { useSeasonalColors } from "@/contexts/ThemeContext";
+import { Logo } from "@/components/ui/Logo";
 import {
   Mail,
   Lock,
@@ -11,7 +14,6 @@ import {
   EyeOff,
   User,
   UserCheck,
-  Activity,
   ArrowLeft,
   CheckCircle,
   Sparkles,
@@ -22,42 +24,36 @@ const roles: {
   label: string;
   description: string;
   icon: string;
-  color: string;
 }[] = [
   {
     value: "participant",
     label: "Participant",
     description: "Join fitness programs and track your progress",
     icon: "🏃‍♂️",
-    color: "emerald",
   },
   {
     value: "instructor",
     label: "Instructor",
     description: "Lead sessions and support participants",
     icon: "👨‍🏫",
-    color: "cyan",
   },
   {
     value: "support_worker",
     label: "Support Worker",
     description: "Provide guidance and assistance to participants",
     icon: "🤝",
-    color: "amber",
   },
   {
     value: "service_provider",
     label: "Service Provider",
     description: "Manage care plans and staff coordination",
     icon: "🏢",
-    color: "blue",
   },
   {
     value: "fitness_partner",
     label: "Fitness Partner",
     description: "Provide facilities and resources",
     icon: "🏋️‍♀️",
-    color: "purple",
   },
 ];
 
@@ -76,6 +72,7 @@ export default function SignUpPage() {
 
   const { signUp } = useAuth();
   const router = useRouter();
+  const seasonalColors = useSeasonalColors();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -115,33 +112,36 @@ export default function SignUpPage() {
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-900 flex transition-all duration-300">
       {/* Left Side - Branding */}
-      <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-emerald-600 via-cyan-500 to-emerald-700 p-12 flex-col justify-between relative overflow-hidden">
+      <div className="hidden lg:flex lg:w-1/2 p-12 flex-col justify-between relative overflow-hidden">
+        {/* Background with seasonal gradient */}
+        <div
+          className="absolute inset-0"
+          style={{
+            background: `linear-gradient(135deg, ${seasonalColors.primary}, ${seasonalColors.primaryHover})`,
+          }}
+        />
+
         {/* Animated Background Elements */}
         <div className="absolute inset-0 opacity-20">
           <div className="absolute top-0 left-0 w-96 h-96 bg-white rounded-full -translate-x-48 -translate-y-48 animate-pulse"></div>
           <div className="absolute bottom-0 right-0 w-96 h-96 bg-white rounded-full translate-x-48 translate-y-48 animate-pulse"></div>
-          <div className="absolute top-1/3 right-1/4 w-32 h-32 bg-cyan-300/30 rounded-full animate-bounce"></div>
-          <div className="absolute bottom-1/3 left-1/4 w-24 h-24 bg-emerald-300/30 rounded-full animate-pulse"></div>
+          <div className="absolute top-1/3 right-1/4 w-32 h-32 bg-white/20 rounded-full animate-bounce"></div>
+          <div className="absolute bottom-1/3 left-1/4 w-24 h-24 bg-white/20 rounded-full animate-pulse"></div>
         </div>
 
         {/* Glassmorphism overlay */}
-        <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/10 to-cyan-500/10 backdrop-blur-sm"></div>
+        <div className="absolute inset-0 bg-black/10 backdrop-blur-sm"></div>
 
         <div className="relative z-10">
-          <div className="flex items-center space-x-3 mb-16">
-            <div className="w-12 h-12 bg-white/95 backdrop-blur-md rounded-2xl flex items-center justify-center shadow-lg hover:scale-110 transition-transform duration-300">
-              <Activity className="w-7 h-7 text-emerald-600" />
-            </div>
-            <span className="text-3xl font-bold text-white drop-shadow-lg">
-              Result Road
-            </span>
+          <div className="mb-16">
+            <Logo size="lg" variant="white" />
           </div>
 
           <div className="space-y-6">
             <h1 className="text-5xl font-bold text-white mb-6 leading-tight drop-shadow-lg">
               Start your empowerment journey
             </h1>
-            <p className="text-xl text-emerald-100 leading-relaxed mb-8">
+            <p className="text-xl text-white/90 leading-relaxed mb-8 drop-shadow-sm">
               Join our inclusive community and discover your potential through
               movement, connection, and confidence building.
             </p>
@@ -154,8 +154,8 @@ export default function SignUpPage() {
                 { text: "Progress tracking tools", icon: Sparkles },
               ].map((benefit, index) => (
                 <div key={index} className="flex items-center space-x-3 group">
-                  <benefit.icon className="w-5 h-5 text-white group-hover:scale-110 transition-transform" />
-                  <span className="text-emerald-100 group-hover:text-white transition-colors">
+                  <benefit.icon className="w-5 h-5 text-white group-hover:scale-110 transition-transform drop-shadow-sm" />
+                  <span className="text-white/90 group-hover:text-white transition-colors drop-shadow-sm">
                     {benefit.text}
                   </span>
                 </div>
@@ -165,18 +165,29 @@ export default function SignUpPage() {
         </div>
 
         <div className="relative z-10">
-          <div className="bg-white/10 backdrop-blur-md rounded-2xl p-6 border border-white/20 shadow-xl">
+          <div className="bg-white/20 backdrop-blur-md rounded-2xl p-6 border border-white/30 shadow-xl">
             <div className="flex items-center space-x-4">
               <div className="flex -space-x-2">
-                <div className="w-10 h-10 bg-gradient-to-r from-emerald-400 to-emerald-500 rounded-full border-2 border-white shadow-lg"></div>
-                <div className="w-10 h-10 bg-gradient-to-r from-cyan-400 to-cyan-500 rounded-full border-2 border-white shadow-lg"></div>
-                <div className="w-10 h-10 bg-gradient-to-r from-emerald-300 to-cyan-400 rounded-full border-2 border-white shadow-lg"></div>
+                <div
+                  className="w-10 h-10 rounded-full border-2 border-white shadow-lg"
+                  style={{ backgroundColor: seasonalColors.primary }}
+                ></div>
+                <div
+                  className="w-10 h-10 rounded-full border-2 border-white shadow-lg"
+                  style={{ backgroundColor: seasonalColors.primaryHover }}
+                ></div>
+                <div
+                  className="w-10 h-10 rounded-full border-2 border-white shadow-lg"
+                  style={{
+                    background: `linear-gradient(135deg, ${seasonalColors.primary}, ${seasonalColors.primaryHover})`,
+                  }}
+                ></div>
               </div>
               <div>
-                <p className="text-white font-semibold">
+                <p className="text-white font-semibold drop-shadow-sm">
                   Join 247+ participants
                 </p>
-                <p className="text-emerald-200 text-sm">
+                <p className="text-white/90 text-sm">
                   Building stronger, more confident lives
                 </p>
               </div>
@@ -186,16 +197,11 @@ export default function SignUpPage() {
       </div>
 
       {/* Right Side - Signup Form */}
-      <div className="w-full lg:w-1/2 flex items-center justify-center p-8 overflow-y-auto">
+      <div className="w-full lg:w-1/2 flex items-center justify-center p-8 overflow-y-auto bg-white dark:bg-slate-800">
         <div className="w-full max-w-md">
           {/* Mobile Logo */}
-          <div className="lg:hidden flex items-center space-x-2 mb-8">
-            <div className="w-10 h-10 bg-gradient-to-r from-emerald-500 to-cyan-500 rounded-xl flex items-center justify-center shadow-lg">
-              <Activity className="w-6 h-6 text-white" />
-            </div>
-            <span className="text-2xl font-bold text-slate-900 dark:text-white">
-              Result Road
-            </span>
+          <div className="lg:hidden mb-8">
+            <Logo size="md" />
           </div>
 
           <div className="text-center mb-8">
@@ -222,14 +228,19 @@ export default function SignUpPage() {
                 Full Name
               </label>
               <div className="relative group">
-                <User className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-emerald-500 transition-colors" />
+                <User className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400 transition-colors" />
                 <input
                   type="text"
                   value={formData.displayName}
                   onChange={(e) =>
                     handleInputChange("displayName", e.target.value)
                   }
-                  className="w-full pl-12 pr-4 py-4 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-xl text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all duration-200 hover:border-emerald-300"
+                  className="w-full pl-12 pr-4 py-4 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-xl text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:border-transparent transition-all duration-200"
+                  style={
+                    {
+                      "--tw-ring-color": seasonalColors.primary,
+                    } as React.CSSProperties
+                  }
                   placeholder="Enter your full name"
                   required
                 />
@@ -241,12 +252,17 @@ export default function SignUpPage() {
                 Email Address
               </label>
               <div className="relative group">
-                <Mail className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-emerald-500 transition-colors" />
+                <Mail className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400 transition-colors" />
                 <input
                   type="email"
                   value={formData.email}
                   onChange={(e) => handleInputChange("email", e.target.value)}
-                  className="w-full pl-12 pr-4 py-4 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-xl text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all duration-200 hover:border-emerald-300"
+                  className="w-full pl-12 pr-4 py-4 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-xl text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:border-transparent transition-all duration-200"
+                  style={
+                    {
+                      "--tw-ring-color": seasonalColors.primary,
+                    } as React.CSSProperties
+                  }
                   placeholder="Enter your email"
                   required
                 />
@@ -258,11 +274,16 @@ export default function SignUpPage() {
                 I am a...
               </label>
               <div className="relative group">
-                <UserCheck className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-emerald-500 transition-colors z-10" />
+                <UserCheck className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400 transition-colors z-10" />
                 <select
                   value={formData.role}
                   onChange={(e) => handleInputChange("role", e.target.value)}
-                  className="w-full pl-12 pr-4 py-4 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-xl text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent appearance-none transition-all duration-200 hover:border-emerald-300"
+                  className="w-full pl-12 pr-4 py-4 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-xl text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:border-transparent appearance-none transition-all duration-200"
+                  style={
+                    {
+                      "--tw-ring-color": seasonalColors.primary,
+                    } as React.CSSProperties
+                  }
                 >
                   {roles.map((role) => (
                     <option
@@ -275,8 +296,15 @@ export default function SignUpPage() {
                   ))}
                 </select>
               </div>
-              <p className="mt-2 text-sm text-slate-600 dark:text-slate-400 bg-emerald-50 dark:bg-emerald-900/20 p-3 rounded-lg border border-emerald-200 dark:border-emerald-700">
-                <span className="font-medium text-emerald-700 dark:text-emerald-400">
+              <p
+                className="mt-2 text-sm p-3 rounded-lg border"
+                style={{
+                  backgroundColor: `${seasonalColors.primary}10`,
+                  borderColor: `${seasonalColors.primary}30`,
+                  color: seasonalColors.primary,
+                }}
+              >
+                <span className="font-medium">
                   {roles.find((r) => r.value === formData.role)?.description}
                 </span>
               </p>
@@ -287,21 +315,37 @@ export default function SignUpPage() {
                 Password
               </label>
               <div className="relative group">
-                <Lock className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-emerald-500 transition-colors" />
+                <Lock className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400 transition-colors" />
                 <input
                   type={showPassword ? "text" : "password"}
                   value={formData.password}
                   onChange={(e) =>
                     handleInputChange("password", e.target.value)
                   }
-                  className="w-full pl-12 pr-12 py-4 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-xl text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all duration-200 hover:border-emerald-300"
+                  className="w-full pl-12 pr-12 py-4 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-xl text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:border-transparent transition-all duration-200"
+                  style={
+                    {
+                      "--tw-ring-color": seasonalColors.primary,
+                    } as React.CSSProperties
+                  }
                   placeholder="Create a password"
                   required
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-4 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-emerald-500 transition-colors"
+                  className="absolute right-4 top-1/2 transform -translate-y-1/2 text-slate-400 transition-colors"
+                  style={{
+                    color: showPassword ? seasonalColors.primary : undefined,
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.color = seasonalColors.primary;
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!showPassword) {
+                      e.currentTarget.style.color = "";
+                    }
+                  }}
                 >
                   {showPassword ? (
                     <EyeOff className="w-5 h-5" />
@@ -317,21 +361,39 @@ export default function SignUpPage() {
                 Confirm Password
               </label>
               <div className="relative group">
-                <Lock className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-emerald-500 transition-colors" />
+                <Lock className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400 transition-colors" />
                 <input
                   type={showConfirmPassword ? "text" : "password"}
                   value={formData.confirmPassword}
                   onChange={(e) =>
                     handleInputChange("confirmPassword", e.target.value)
                   }
-                  className="w-full pl-12 pr-12 py-4 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-xl text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all duration-200 hover:border-emerald-300"
+                  className="w-full pl-12 pr-12 py-4 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-xl text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:border-transparent transition-all duration-200"
+                  style={
+                    {
+                      "--tw-ring-color": seasonalColors.primary,
+                    } as React.CSSProperties
+                  }
                   placeholder="Confirm your password"
                   required
                 />
                 <button
                   type="button"
                   onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                  className="absolute right-4 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-emerald-500 transition-colors"
+                  className="absolute right-4 top-1/2 transform -translate-y-1/2 text-slate-400 transition-colors"
+                  style={{
+                    color: showConfirmPassword
+                      ? seasonalColors.primary
+                      : undefined,
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.color = seasonalColors.primary;
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!showConfirmPassword) {
+                      e.currentTarget.style.color = "";
+                    }
+                  }}
                 >
                   {showConfirmPassword ? (
                     <EyeOff className="w-5 h-5" />
@@ -346,7 +408,10 @@ export default function SignUpPage() {
               <input
                 type="checkbox"
                 id="terms"
-                className="w-4 h-4 text-emerald-600 bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 rounded focus:ring-emerald-500 focus:ring-2 mt-1"
+                className="w-4 h-4 bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 rounded transition-colors mt-1"
+                style={{
+                  accentColor: seasonalColors.primary,
+                }}
                 required
               />
               <label
@@ -356,7 +421,16 @@ export default function SignUpPage() {
                 I agree to the{" "}
                 <a
                   href="#"
-                  className="text-emerald-600 hover:text-emerald-700 dark:text-emerald-400 dark:hover:text-emerald-300 font-medium transition-colors"
+                  className="font-medium transition-colors"
+                  style={{
+                    color: seasonalColors.primary,
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.color = seasonalColors.primaryHover;
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.color = seasonalColors.primary;
+                  }}
                 >
                   Privacy Policy
                 </a>
@@ -366,7 +440,23 @@ export default function SignUpPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-gradient-to-r from-emerald-500 via-emerald-600 to-cyan-500 text-white font-semibold py-4 rounded-xl hover:from-emerald-600 hover:via-emerald-700 hover:to-cyan-600 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 dark:focus:ring-offset-slate-900 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-lg hover:shadow-xl hover:scale-[1.02] transform"
+              className="w-full text-white font-semibold py-4 rounded-xl focus:outline-none focus:ring-2 focus:ring-offset-2 dark:focus:ring-offset-slate-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-lg hover:shadow-xl hover:scale-[1.02] transform"
+              style={
+                {
+                  backgroundColor: seasonalColors.primary,
+                  "--tw-ring-color": seasonalColors.primary,
+                } as React.CSSProperties
+              }
+              onMouseEnter={(e) => {
+                if (!loading)
+                  e.currentTarget.style.backgroundColor =
+                    seasonalColors.primaryHover;
+              }}
+              onMouseLeave={(e) => {
+                if (!loading)
+                  e.currentTarget.style.backgroundColor =
+                    seasonalColors.primary;
+              }}
             >
               {loading ? (
                 <div className="flex items-center justify-center space-x-2">
@@ -384,7 +474,16 @@ export default function SignUpPage() {
               Already have an account?{" "}
               <Link
                 href="/login"
-                className="text-emerald-600 hover:text-emerald-700 dark:text-emerald-400 dark:hover:text-emerald-300 font-semibold transition-colors"
+                className="font-semibold transition-colors"
+                style={{
+                  color: seasonalColors.primary,
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.color = seasonalColors.primaryHover;
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.color = seasonalColors.primary;
+                }}
               >
                 Sign in here
               </Link>

@@ -1,3 +1,4 @@
+// components/layout/Sidebar.tsx
 "use client";
 
 import Link from "next/link";
@@ -10,13 +11,14 @@ import {
   BarChart3,
   Settings,
   LogOut,
-  Activity,
   Building,
   User,
   BookOpen,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
+import { Logo } from "@/components/ui/Logo";
+import { useSeasonalColors } from "@/contexts/ThemeContext";
 
 const roleBasedNavigation = {
   admin: [
@@ -54,13 +56,14 @@ const roleBasedNavigation = {
     { name: "Dashboard", href: "/dashboard", icon: Home },
     { name: "My Clients", href: "/dashboard/clients", icon: Users },
     { name: "Sessions", href: "/dashboard/sessions", icon: Calendar },
-    { name: "Progress", href: "/dashboard/progress", icon: Activity },
+    { name: "Progress", href: "/dashboard/progress", icon: BarChart3 },
   ],
 };
 
 export function Sidebar() {
   const { userProfile, signOut } = useAuth();
   const pathname = usePathname();
+  const seasonalColors = useSeasonalColors();
 
   if (!userProfile) return null;
 
@@ -71,19 +74,12 @@ export function Sidebar() {
       <div className="h-full flex flex-col">
         {/* Header */}
         <div className="p-6 border-b border-slate-200 dark:border-slate-700">
-          <div className="flex items-center space-x-3 mb-4">
-            <div className="w-10 h-10 bg-emerald-500 rounded-xl flex items-center justify-center">
-              <Activity className="w-6 h-6 text-white" />
-            </div>
-            <div>
-              <h1 className="text-xl font-bold text-slate-900 dark:text-white">
-                Result Road
-              </h1>
-              <p className="text-sm capitalize text-slate-500 dark:text-slate-400">
-                {userProfile.role.replace("_", " ")}
-              </p>
-            </div>
+          <div className="mb-4">
+            <Logo size="md" />
           </div>
+          <p className="text-sm capitalize text-slate-500 dark:text-slate-400 mb-4">
+            {userProfile.role.replace("_", " ")}
+          </p>
 
           {/* Theme Toggle in Sidebar */}
           <div className="flex justify-end">
@@ -128,8 +124,10 @@ export function Sidebar() {
         {/* User Profile & Sign Out */}
         <div className="p-4 border-t border-slate-200 dark:border-slate-700">
           <div className="flex items-center space-x-3 mb-4 p-3 rounded-xl bg-slate-50 dark:bg-slate-800">
-            <div className="w-10 h-10 bg-emerald-100 dark:bg-emerald-900/30 rounded-xl flex items-center justify-center">
-              <User className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+            <div
+              className={`w-10 h-10 bg-gradient-to-br ${seasonalColors.primary} rounded-xl flex items-center justify-center`}
+            >
+              <User className="w-5 h-5 text-white" />
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-semibold truncate text-slate-900 dark:text-white">

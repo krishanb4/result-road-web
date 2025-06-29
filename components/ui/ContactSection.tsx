@@ -1,30 +1,30 @@
+// components/ui/ContactSection.tsx
+"use client";
+
 import { Phone, Mail, MapPin } from "lucide-react";
+import { useSeasonalColors } from "@/contexts/ThemeContext";
 
 const contactInfo = [
   {
     icon: Phone,
     label: "Phone",
     value: "0456 194 251",
-    colorClasses:
-      "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400",
   },
   {
     icon: Mail,
     label: "Email",
     value: "nath@boxcamp.page",
-    colorClasses:
-      "bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400",
   },
   {
     icon: MapPin,
     label: "Location",
     value: "Newcastle, Lake Macquarie & Hunter Region",
-    colorClasses:
-      "bg-cyan-100 dark:bg-cyan-900/30 text-cyan-600 dark:text-cyan-400",
   },
 ];
 
 export function ContactSection() {
+  const seasonalColors = useSeasonalColors();
+
   return (
     <section
       id="contact"
@@ -45,9 +45,12 @@ export function ContactSection() {
               {contactInfo.map((item, index) => (
                 <div key={index} className="flex items-center space-x-4">
                   <div
-                    className={`w-12 h-12 ${item.colorClasses} rounded-xl flex items-center justify-center transition-all duration-200 hover:scale-110`}
+                    className="w-12 h-12 rounded-xl flex items-center justify-center transition-all duration-200 hover:scale-110"
+                    style={{
+                      backgroundColor: seasonalColors.primary,
+                    }}
                   >
-                    <item.icon className="w-6 h-6" />
+                    <item.icon className="w-6 h-6 text-white" />
                   </div>
                   <div>
                     <div className="font-semibold text-slate-900 dark:text-white">
@@ -74,7 +77,12 @@ export function ContactSection() {
                   </label>
                   <input
                     type="text"
-                    className="w-full px-4 py-3 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white placeholder-slate-500 dark:placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 dark:focus:ring-emerald-400 focus:border-transparent transition-all duration-200"
+                    className="w-full px-4 py-3 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white placeholder-slate-500 dark:placeholder-slate-400 focus:outline-none focus:ring-2 focus:border-transparent transition-all duration-200"
+                    style={
+                      {
+                        "--tw-ring-color": seasonalColors.primary,
+                      } as React.CSSProperties
+                    }
                     placeholder="John"
                   />
                 </div>
@@ -84,7 +92,12 @@ export function ContactSection() {
                   </label>
                   <input
                     type="text"
-                    className="w-full px-4 py-3 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white placeholder-slate-500 dark:placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-500 dark:focus:ring-amber-400 focus:border-transparent transition-all duration-200"
+                    className="w-full px-4 py-3 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white placeholder-slate-500 dark:placeholder-slate-400 focus:outline-none focus:ring-2 focus:border-transparent transition-all duration-200"
+                    style={
+                      {
+                        "--tw-ring-color": seasonalColors.primary,
+                      } as React.CSSProperties
+                    }
                     placeholder="Smith"
                   />
                 </div>
@@ -96,7 +109,12 @@ export function ContactSection() {
                 </label>
                 <input
                   type="email"
-                  className="w-full px-4 py-3 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white placeholder-slate-500 dark:placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-orange-500 dark:focus:ring-orange-400 focus:border-transparent transition-all duration-200"
+                  className="w-full px-4 py-3 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white placeholder-slate-500 dark:placeholder-slate-400 focus:outline-none focus:ring-2 focus:border-transparent transition-all duration-200"
+                  style={
+                    {
+                      "--tw-ring-color": seasonalColors.primary,
+                    } as React.CSSProperties
+                  }
                   placeholder="john@example.com"
                 />
               </div>
@@ -107,14 +125,30 @@ export function ContactSection() {
                 </label>
                 <textarea
                   rows={4}
-                  className="w-full px-4 py-3 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white placeholder-slate-500 dark:placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 dark:focus:ring-cyan-400 focus:border-transparent resize-none transition-all duration-200"
+                  className="w-full px-4 py-3 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white placeholder-slate-500 dark:placeholder-slate-400 focus:outline-none focus:ring-2 focus:border-transparent resize-none transition-all duration-200"
+                  style={
+                    {
+                      "--tw-ring-color": seasonalColors.primary,
+                    } as React.CSSProperties
+                  }
                   placeholder="How can we help you?"
-                ></textarea>
+                />
               </div>
 
               <button
                 type="submit"
-                className="w-full bg-gradient-to-r from-emerald-500 via-amber-500 to-cyan-500 hover:from-emerald-600 hover:via-amber-600 hover:to-cyan-600 text-white font-semibold py-4 rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl hover:scale-[1.02]"
+                className="w-full text-white font-semibold py-4 rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl hover:scale-[1.02]"
+                style={{
+                  backgroundColor: seasonalColors.primary,
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor =
+                    seasonalColors.primaryHover;
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor =
+                    seasonalColors.primary;
+                }}
               >
                 Send Message
               </button>

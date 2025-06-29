@@ -1,8 +1,18 @@
+"use client";
+
 import { ArrowRight } from "lucide-react";
+import { useSeasonalColors } from "@/contexts/ThemeContext";
 
 export function CTASection() {
+  const seasonalColors = useSeasonalColors();
+
   return (
-    <section className="py-20 md:py-28 bg-gradient-to-r from-emerald-500  via-orange-500 to-cyan-500 transition-all duration-300">
+    <section
+      className="py-20 md:py-28 transition-all duration-300"
+      style={{
+        background: `linear-gradient(135deg, ${seasonalColors.primary}, ${seasonalColors.primaryHover})`,
+      }}
+    >
       <div className="max-w-6xl mx-auto px-6">
         <div className="text-center text-white">
           <h2 className="text-4xl md:text-5xl font-bold mb-6">

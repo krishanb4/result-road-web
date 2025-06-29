@@ -165,10 +165,10 @@ export default function DashboardPage() {
     <div className="space-y-8">
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-4xl font-bold text-white mb-2">
+        <h1 className="text-4xl font-bold text-slate-900 dark:text-white mb-2 transition-colors duration-300">
           Welcome back, {userProfile.displayName || "User"}!
         </h1>
-        <p className="text-white/70 text-lg">
+        <p className="text-slate-600 dark:text-slate-300 text-lg transition-colors duration-300">
           {roleName} Dashboard - Here's what's happening today
         </p>
       </div>
@@ -178,22 +178,27 @@ export default function DashboardPage() {
         {data.stats.map((stat, index) => {
           const Icon = stat.icon;
           return (
-            <GlassCard key={index} className="p-6" hover>
+            <div
+              key={index}
+              className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm border border-slate-200/50 dark:border-slate-700/50 p-6 rounded-xl shadow-sm hover:shadow-md transition-all duration-300 hover:scale-105"
+            >
               <div className="flex items-start justify-between">
                 <div>
-                  <p className="text-white/70 text-sm font-medium">
+                  <p className="text-slate-600 dark:text-slate-400 text-sm font-medium transition-colors duration-300">
                     {stat.label}
                   </p>
-                  <p className="text-3xl font-bold text-white mt-2">
+                  <p className="text-3xl font-bold text-slate-900 dark:text-white mt-2 transition-colors duration-300">
                     {stat.value}
                   </p>
-                  <p className="text-green-400 text-sm mt-1">{stat.change}</p>
+                  <p className="text-emerald-600 dark:text-emerald-400 text-sm mt-1 transition-colors duration-300">
+                    {stat.change}
+                  </p>
                 </div>
-                <div className="bg-white/10 p-3 rounded-lg">
-                  <Icon className="w-6 h-6 text-blue-400" />
+                <div className="bg-slate-100 dark:bg-slate-700 p-3 rounded-lg transition-colors duration-300">
+                  <Icon className="w-6 h-6 text-emerald-600 dark:text-emerald-400 transition-colors duration-300" />
                 </div>
               </div>
-            </GlassCard>
+            </div>
           );
         })}
       </div>
@@ -202,59 +207,65 @@ export default function DashboardPage() {
       <div className="grid lg:grid-cols-3 gap-8">
         {/* Recent Activity */}
         <div className="lg:col-span-2">
-          <GlassCard className="p-6">
-            <h3 className="text-xl font-semibold text-white mb-6">
+          <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm border border-slate-200/50 dark:border-slate-700/50 p-6 rounded-xl shadow-sm transition-all duration-300">
+            <h3 className="text-xl font-semibold text-slate-900 dark:text-white mb-6 transition-colors duration-300">
               Recent Activity
             </h3>
             <div className="space-y-4">
               {data.recentActivity.map((activity, index) => (
                 <div
                   key={index}
-                  className="flex items-center space-x-4 p-4 bg-white/5 rounded-lg"
+                  className="flex items-center space-x-4 p-4 bg-slate-50 dark:bg-slate-700 rounded-lg transition-colors duration-300"
                 >
-                  <div className="w-2 h-2 bg-blue-400 rounded-full"></div>
-                  <p className="text-white/80">{activity}</p>
-                  <span className="text-white/50 text-sm ml-auto">
+                  <div className="w-2 h-2 bg-emerald-500 dark:bg-emerald-400 rounded-full transition-colors duration-300"></div>
+                  <p className="text-slate-700 dark:text-slate-200 flex-1 transition-colors duration-300">
+                    {activity}
+                  </p>
+                  <span className="text-slate-500 dark:text-slate-400 text-sm transition-colors duration-300">
                     {Math.floor(Math.random() * 24)} hours ago
                   </span>
                 </div>
               ))}
             </div>
-          </GlassCard>
+          </div>
         </div>
 
         {/* Quick Actions */}
         <div>
-          <GlassCard className="p-6">
-            <h3 className="text-xl font-semibold text-white mb-6">
+          <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm border border-slate-200/50 dark:border-slate-700/50 p-6 rounded-xl shadow-sm transition-all duration-300">
+            <h3 className="text-xl font-semibold text-slate-900 dark:text-white mb-6 transition-colors duration-300">
               Quick Actions
             </h3>
             <div className="space-y-3">
               {getQuickActions(userProfile.role).map((action, index) => (
                 <button
                   key={index}
-                  className="w-full text-left p-4 bg-white/5 hover:bg-white/10 rounded-lg transition-all"
+                  className="w-full text-left p-4 bg-slate-50 dark:bg-slate-700 hover:bg-slate-100 dark:hover:bg-slate-600 rounded-lg transition-all duration-300"
                 >
                   <div className="flex items-center space-x-3">
-                    <action.icon className="w-5 h-5 text-blue-400" />
-                    <span className="text-white/80">{action.label}</span>
+                    <action.icon className="w-5 h-5 text-emerald-600 dark:text-emerald-400 transition-colors duration-300" />
+                    <span className="text-slate-700 dark:text-slate-200 transition-colors duration-300">
+                      {action.label}
+                    </span>
                   </div>
                 </button>
               ))}
             </div>
-          </GlassCard>
+          </div>
         </div>
       </div>
 
       {/* Progress Chart Placeholder */}
-      <GlassCard className="p-6">
-        <h3 className="text-xl font-semibold text-white mb-6">
+      <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm border border-slate-200/50 dark:border-slate-700/50 p-6 rounded-xl shadow-sm transition-all duration-300">
+        <h3 className="text-xl font-semibold text-slate-900 dark:text-white mb-6 transition-colors duration-300">
           Progress Overview
         </h3>
-        <div className="h-64 bg-white/5 rounded-lg flex items-center justify-center">
-          <p className="text-white/50">Chart visualization would go here</p>
+        <div className="h-64 bg-slate-50 dark:bg-slate-700 rounded-lg flex items-center justify-center transition-colors duration-300">
+          <p className="text-slate-500 dark:text-slate-400 transition-colors duration-300">
+            Chart visualization would go here
+          </p>
         </div>
-      </GlassCard>
+      </div>
     </div>
   );
 }

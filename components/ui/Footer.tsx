@@ -1,30 +1,34 @@
-import { Activity, Heart } from "lucide-react";
+// components/ui/Footer.tsx
+"use client";
+
+import { Heart } from "lucide-react";
+import { Logo } from "./Logo";
+import { useSeasonalColors } from "@/contexts/ThemeContext";
 
 const quickLinks = [
-  { label: "About Us", href: "#about", color: "hover:text-emerald-500" },
-  { label: "Services", href: "#services", color: "hover:text-amber-500" },
-  { label: "Programs", href: "#programs", color: "hover:text-orange-500" },
-  { label: "Get Started", href: "/signup", color: "hover:text-cyan-500" },
+  { label: "About Us", href: "#about" },
+  { label: "Services", href: "#services" },
+  { label: "Programs", href: "#programs" },
+  { label: "Get Started", href: "/signup" },
 ];
 
 const supportLinks = [
-  { label: "Contact Us", href: "#contact", color: "hover:text-emerald-500" },
-  { label: "Help Center", href: "#", color: "hover:text-amber-500" },
-  { label: "Privacy Policy", href: "#", color: "hover:text-orange-500" },
-  { label: "Terms of Service", href: "#", color: "hover:text-cyan-500" },
+  { label: "Contact Us", href: "#contact" },
+  { label: "Help Center", href: "#" },
+  { label: "Privacy Policy", href: "#" },
+  { label: "Terms of Service", href: "#" },
 ];
 
 export function Footer() {
+  const seasonalColors = useSeasonalColors();
+
   return (
     <footer className="bg-slate-900 dark:bg-slate-950 text-white py-16 transition-all duration-300">
       <div className="max-w-6xl mx-auto px-6">
         <div className="grid md:grid-cols-4 gap-8 mb-8">
           <div className="col-span-1 md:col-span-2">
-            <div className="flex items-center space-x-2 mb-6">
-              <div className="w-8 h-8 bg-gradient-to-br from-emerald-400 to-cyan-500 rounded-lg flex items-center justify-center">
-                <Activity className="w-5 h-5 text-white" />
-              </div>
-              <span className="text-xl font-bold">Result Road</span>
+            <div className="mb-6">
+              <Logo size="md" variant="white" />
             </div>
             <p className="text-slate-400 mb-6 max-w-md">
               Empowering lives through movement and community. Building
@@ -32,15 +36,22 @@ export function Footer() {
               and mental health challenges.
             </p>
             <div className="flex space-x-4">
-              {[
-                { color: "from-emerald-400 to-emerald-500" },
-                { color: "from-amber-400 to-amber-500" },
-                { color: "from-cyan-400 to-cyan-500" },
-              ].map((social, i) => (
+              {[1, 2, 3].map((social, i) => (
                 <a
                   key={i}
                   href="#"
-                  className={`w-10 h-10 bg-gradient-to-br ${social.color} rounded-lg flex items-center justify-center hover:scale-110 transition-all duration-200`}
+                  className="w-10 h-10 rounded-lg flex items-center justify-center hover:scale-110 transition-all duration-200"
+                  style={{
+                    backgroundColor: seasonalColors.primary,
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor =
+                      seasonalColors.primaryHover;
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor =
+                      seasonalColors.primary;
+                  }}
                 >
                   <div className="w-5 h-5 bg-white rounded opacity-70"></div>
                 </a>
@@ -55,9 +66,13 @@ export function Footer() {
                 <li key={index}>
                   <a
                     href={link.href}
-                    className={`text-slate-400 ${link.color} transition-colors`}
+                    className="text-slate-400 transition-colors hover:text-white relative group"
                   >
                     {link.label}
+                    <span
+                      className="absolute bottom-0 left-0 w-0 h-0.5 transition-all duration-300 group-hover:w-full"
+                      style={{ backgroundColor: seasonalColors.primary }}
+                    />
                   </a>
                 </li>
               ))}
@@ -71,9 +86,13 @@ export function Footer() {
                 <li key={index}>
                   <a
                     href={link.href}
-                    className={`text-slate-400 ${link.color} transition-colors`}
+                    className="text-slate-400 transition-colors hover:text-white relative group"
                   >
                     {link.label}
+                    <span
+                      className="absolute bottom-0 left-0 w-0 h-0.5 transition-all duration-300 group-hover:w-full"
+                      style={{ backgroundColor: seasonalColors.primary }}
+                    />
                   </a>
                 </li>
               ))}
@@ -89,7 +108,10 @@ export function Footer() {
             </p>
             <div className="flex items-center space-x-2 mt-4 md:mt-0">
               <span className="text-slate-400 text-sm">Built with</span>
-              <Heart className="w-4 h-4 text-red-500 fill-current animate-pulse" />
+              <Heart
+                className="w-4 h-4 fill-current animate-pulse"
+                style={{ color: seasonalColors.primary }}
+              />
               <span className="text-slate-400 text-sm">for our community</span>
             </div>
           </div>
