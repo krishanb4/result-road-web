@@ -5,6 +5,16 @@ import { ArrowRight, Play } from "lucide-react";
 import { useSeasonalColors } from "@/contexts/ThemeContext";
 import { motion, Variants } from "framer-motion";
 
+// Configuration for background video
+const VIDEO_CONFIG = {
+  // Update this path to your video file
+  videoPath: "/videos/1.mp4", // Place your video in public/videos/
+  // Fallback image if video fails to load
+  fallbackImage: "/images/hero-fallback.jpg",
+  // Video overlay opacity (0-1) - reduced for more video visibility
+  overlayOpacity: 0.3,
+};
+
 // Floating animation variants with proper typing
 const floatingVariants: Variants = {
   initial: { y: 0, rotate: 0 },
@@ -100,17 +110,36 @@ export function HeroSection() {
   const seasonalColors = useSeasonalColors();
 
   return (
-    <section className="relative py-20 md:py-28 lg:py-32 bg-gradient-to-b from-slate-50 to-white dark:from-slate-900 dark:to-slate-800 transition-all duration-300 overflow-hidden">
-      {/* Animated Background Elements */}
-      <div className="absolute inset-0 overflow-hidden">
-        {/* Large floating shapes */}
+    <section className="relative py-20 md:py-28 lg:py-32 overflow-hidden min-h-screen flex items-center">
+      {/* Background Video */}
+      <div className="absolute inset-0 w-full h-full">
+        <video
+          autoPlay
+          muted
+          loop
+          playsInline
+          className="absolute inset-0 w-full h-full object-cover"
+          poster={VIDEO_CONFIG.fallbackImage}
+        >
+          <source src={VIDEO_CONFIG.videoPath} type="video/mp4" />
+          {/* Fallback for browsers that don't support video */}
+          Your browser does not support the video tag.
+        </video>
+
+        {/* Video Overlay - Light overlay to maintain text readability */}
+        <div className="absolute inset-0 bg-black/30" />
+      </div>
+
+      {/* Animated Background Elements (over video) - reduced opacity */}
+      <div className="absolute inset-0 overflow-hidden z-10">
+        {/* Large floating shapes - more subtle */}
         <motion.div
           variants={floatingVariants}
           initial="initial"
           animate="animate"
           className="absolute -top-20 -left-20 w-96 h-96 opacity-10"
           style={{
-            background: `radial-gradient(circle, ${seasonalColors.primary}40, transparent 70%)`,
+            background: `radial-gradient(circle, ${seasonalColors.primary}20, transparent 70%)`,
           }}
         />
 
@@ -120,7 +149,7 @@ export function HeroSection() {
           animate="animate"
           className="absolute -bottom-32 -right-32 w-80 h-80 opacity-10"
           style={{
-            background: `radial-gradient(circle, ${seasonalColors.primaryHover}40, transparent 70%)`,
+            background: `radial-gradient(circle, ${seasonalColors.primaryHover}20, transparent 70%)`,
           }}
         />
 
@@ -130,15 +159,15 @@ export function HeroSection() {
           animate="animate"
           className="absolute top-1/3 right-1/4 w-64 h-64 opacity-10"
           style={{
-            background: `radial-gradient(circle, ${seasonalColors.primary}30, transparent 70%)`,
+            background: `radial-gradient(circle, ${seasonalColors.primary}15, transparent 70%)`,
           }}
         />
 
-        {/* Animated dots/particles */}
-        {[...Array(12)].map((_, i) => (
+        {/* Animated dots/particles - more subtle */}
+        {[...Array(8)].map((_, i) => (
           <motion.div
             key={i}
-            className="absolute w-2 h-2 rounded-full opacity-30"
+            className="absolute w-1.5 h-1.5 rounded-full opacity-30"
             style={{
               backgroundColor: seasonalColors.primary,
               left: `${Math.random() * 100}%`,
@@ -147,7 +176,7 @@ export function HeroSection() {
             animate={{
               y: [-10, 10, -10],
               x: [-5, 5, -5],
-              opacity: [0.3, 0.7, 0.3],
+              opacity: [0.2, 0.4, 0.2],
             }}
             transition={{
               duration: 4 + Math.random() * 4,
@@ -157,26 +186,10 @@ export function HeroSection() {
             }}
           />
         ))}
-
-        {/* Gradient mesh overlay */}
-        <motion.div
-          className="absolute inset-0 opacity-30"
-          style={{
-            background: `conic-gradient(from 180deg at 50% 50%, ${seasonalColors.primary}10 0deg, transparent 120deg, ${seasonalColors.primaryHover}10 240deg, transparent 360deg)`,
-          }}
-          animate={{
-            rotate: 360,
-          }}
-          transition={{
-            duration: 60,
-            repeat: Infinity,
-            ease: "linear",
-          }}
-        />
       </div>
 
       {/* Content */}
-      <div className="max-w-6xl mx-auto px-6 relative z-10">
+      <div className="max-w-6xl mx-auto px-6 relative z-20">
         <div className="max-w-4xl mx-auto text-center">
           <motion.div
             variants={containerVariants}
@@ -185,7 +198,7 @@ export function HeroSection() {
           >
             <motion.h1
               variants={itemVariants}
-              className="text-5xl md:text-6xl lg:text-7xl font-bold text-slate-900 dark:text-white mb-8 leading-tight"
+              className="text-5xl md:text-6xl lg:text-7xl font-bold text-white mb-8 leading-tight drop-shadow-lg"
             >
               Empowering Through
               <motion.span
@@ -197,7 +210,7 @@ export function HeroSection() {
                 }}
               >
                 <motion.span
-                  className="bg-clip-text text-transparent"
+                  className="bg-clip-text text-transparent drop-shadow-lg"
                   style={{
                     background: `linear-gradient(135deg, ${seasonalColors.primary}, ${seasonalColors.primaryHover})`,
                     WebkitBackgroundClip: "text",
@@ -219,7 +232,7 @@ export function HeroSection() {
 
             <motion.p
               variants={itemVariants}
-              className="text-xl md:text-2xl text-slate-600 dark:text-slate-300 mb-12 max-w-3xl mx-auto leading-relaxed"
+              className="text-xl md:text-2xl text-slate-200 mb-12 max-w-3xl mx-auto leading-relaxed drop-shadow-md"
             >
               An inclusive fitness and personal development program designed to
               support individuals living with disability and mental health
@@ -278,11 +291,11 @@ export function HeroSection() {
                 variants={buttonVariants}
                 whileHover={{
                   scale: 1.05,
-                  backgroundColor: "rgba(255, 255, 255, 0.3)",
+                  backgroundColor: "rgba(255, 255, 255, 0.2)",
                   transition: { duration: 0.2 },
                 }}
                 whileTap={{ scale: 0.95 }}
-                className="bg-white/10 dark:bg-slate-800/50 backdrop-blur-md border border-white/20 dark:border-slate-600/50 text-slate-700 dark:text-slate-200 font-semibold px-8 py-4 rounded-xl transition-all duration-200 inline-flex items-center justify-center space-x-2 group relative overflow-hidden"
+                className="bg-white/10 backdrop-blur-md border border-white/30 text-white font-semibold px-8 py-4 rounded-xl transition-all duration-200 inline-flex items-center justify-center space-x-2 group relative overflow-hidden shadow-lg"
               >
                 {/* Animated pulse effect */}
                 <motion.div
@@ -318,7 +331,7 @@ export function HeroSection() {
             {/* Animated stats or features */}
             <motion.div
               variants={itemVariants}
-              className="flex flex-wrap justify-center gap-8 text-slate-600 dark:text-slate-400"
+              className="flex flex-wrap justify-center gap-8 text-slate-300"
             >
               {[
                 { number: "247+", label: "Participants" },
@@ -343,7 +356,7 @@ export function HeroSection() {
                   }}
                 >
                   <motion.div
-                    className="text-2xl font-bold mb-1"
+                    className="text-2xl font-bold mb-1 drop-shadow-md"
                     style={{ color: seasonalColors.primary }}
                     animate={{
                       color: [
@@ -361,7 +374,7 @@ export function HeroSection() {
                   >
                     {stat.number}
                   </motion.div>
-                  <div className="text-sm">{stat.label}</div>
+                  <div className="text-sm drop-shadow-sm">{stat.label}</div>
                 </motion.div>
               ))}
             </motion.div>
@@ -371,7 +384,7 @@ export function HeroSection() {
 
       {/* Scroll indicator */}
       <motion.div
-        className="absolute bottom-8 left-1/2 transform -translate-x-1/2"
+        className="absolute bottom-8 left-1/2 transform -translate-x-1/2 z-20"
         animate={{
           y: [0, 10, 0],
         }}
@@ -382,7 +395,7 @@ export function HeroSection() {
         }}
       >
         <motion.div
-          className="w-6 h-10 border-2 border-slate-400 dark:border-slate-500 rounded-full flex justify-center"
+          className="w-6 h-10 border-2 border-white/60 rounded-full flex justify-center"
           whileHover={{ scale: 1.1 }}
         >
           <motion.div

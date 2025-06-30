@@ -1,6 +1,6 @@
 // lib/firebase.ts
 import { initializeApp } from 'firebase/app';
-import { getAuth } from 'firebase/auth';
+import { getAuth, GoogleAuthProvider } from 'firebase/auth';
 import {
     getFirestore,
     initializeFirestore,
@@ -25,6 +25,12 @@ const app = initializeApp(firebaseConfig);
 
 // Initialize Auth
 export const auth = getAuth(app);
+
+// Initialize Google Auth Provider
+export const googleProvider = new GoogleAuthProvider();
+googleProvider.setCustomParameters({
+    prompt: 'select_account'
+});
 
 // Initialize Firestore with modern persistence API
 export const db = (() => {

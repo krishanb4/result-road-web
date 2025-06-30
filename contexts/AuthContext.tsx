@@ -11,6 +11,8 @@ import {
   User,
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
+  signInWithPopup,
+  GoogleAuthProvider,
   signOut as firebaseSignOut,
   onAuthStateChanged,
   updateProfile as updateFirebaseProfile,
@@ -95,6 +97,7 @@ interface AuthContextType {
     role: UserRole,
     displayName: string
   ) => Promise<void>;
+  signInWithGoogle: (role: UserRole) => Promise<void>;
   signOut: () => Promise<void>;
   updateProfile: (updates: Partial<UserProfile>) => Promise<void>;
   clearError: () => void;
@@ -116,12 +119,12 @@ export function useAuth() {
 const createUserProfile = async (
   user: User,
   role: UserRole,
-  displayName: string
+  displayName?: string
 ): Promise<UserProfile> => {
   const userProfile: UserProfile = {
     uid: user.uid,
     email: user.email!,
-    displayName,
+    displayName: displayName || user.displayName || "User",
     role,
     status: "active",
     createdAt: serverTimestamp(),
@@ -162,6 +165,12 @@ const updateLastLogin = async (uid: string) => {
     console.error("Error updating last login:", error);
   }
 };
+
+// Initialize Google Auth Provider
+const googleProvider = new GoogleAuthProvider();
+googleProvider.setCustomParameters({
+  prompt: "select_account",
+});
 
 // AuthProvider component
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -287,6 +296,76 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  // Google Sign in function
+  const signInWithGoogle = async (role: UserRole) => {
+    try {
+      setError(null);
+      setLoading(true);
+
+      const result = await signInWithPopup(auth, googleProvider);
+      const user = result.user;
+
+      // Check if user profile already exists
+      let profile = await getUserProfile(user.uid);
+
+      if (profile) {
+        // User exists, update last login
+        setUserProfile(profile);
+        await updateLastLogin(user.uid);
+      } else {
+        // New user, create profile with the provided role
+        profile = await createUserProfile(
+          user,
+          role,
+          user.displayName || undefined
+        );
+        setUserProfile(profile);
+      }
+
+      console.log("User signed in with Google successfully:", user.uid);
+    } catch (error: any) {
+      console.error("Google sign in error:", error);
+
+      // Handle specific Firebase errors
+      let errorMessage = "Failed to sign in with Google";
+
+      switch (error.code) {
+        case "auth/account-exists-with-different-credential":
+          errorMessage =
+            "An account already exists with the same email address but different sign-in credentials";
+          break;
+        case "auth/auth-domain-config-required":
+          errorMessage = "Google sign-in is not properly configured";
+          break;
+        case "auth/cancelled-popup-request":
+          errorMessage = "Sign-in cancelled";
+          break;
+        case "auth/operation-not-allowed":
+          errorMessage = "Google sign-in is not enabled";
+          break;
+        case "auth/operation-not-supported-in-this-environment":
+          errorMessage = "Google sign-in is not supported in this environment";
+          break;
+        case "auth/popup-blocked":
+          errorMessage = "Sign-in popup was blocked by the browser";
+          break;
+        case "auth/popup-closed-by-user":
+          errorMessage = "Sign-in popup was closed before completing";
+          break;
+        case "auth/unauthorized-domain":
+          errorMessage = "This domain is not authorized for Google sign-in";
+          break;
+        default:
+          errorMessage = error.message || "Failed to sign in with Google";
+      }
+
+      setError(errorMessage);
+      throw new Error(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Sign out function
   const signOut = async () => {
     try {
@@ -387,6 +466,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     error,
     signIn,
     signUp,
+    signInWithGoogle,
     signOut,
     updateProfile,
     clearError,
