@@ -1,6 +1,5 @@
 // components/ui/Logo.tsx
 "use client";
-
 import Image from "next/image";
 import { useTheme } from "next-themes";
 import { useEffect, useState } from "react";
@@ -28,17 +27,17 @@ export function Logo({
 
   const sizeClasses = {
     sm: {
-      container: "w-16 h-12",
+      container: "w-14 h-14",
       text: "text-lg",
-      spacing: "space-x-3",
+      spacing: "space-x-2",
     },
     md: {
-      container: "w-30 h-32",
+      container: "w-18 h-18", // Increased size for better visibility
       text: "text-xl",
-      spacing: "space-x-4",
+      spacing: "space-x-3",
     },
     lg: {
-      container: "w-24 h-20",
+      container: "w-24 h-24",
       text: "text-2xl",
       spacing: "space-x-4",
     },
@@ -48,19 +47,19 @@ export function Logo({
 
   const getLogoSrc = () => {
     if (variant === "white") {
-      return "/logo-dark.png"; // Always use light logo for white variant
+      return "/main-logo-dark.png"; // Always use light logo for white variant
     }
     if (variant === "dark") {
-      return "/logo-light.png"; // Always use dark logo for dark variant
+      return "/main-logo-light.png"; // Always use dark logo for dark variant
     }
-
     // For default variant, use theme-aware logic
     if (!mounted) {
-      return "/logo-dark.png"; // Default to dark logo during SSR
+      return "/main-logo-dark.png"; // Default to dark logo during SSR
     }
-
     // Fixed logic: dark theme should use light logo, light theme should use dark logo
-    return resolvedTheme === "dark" ? "/logo-dark.png" : "/logo-light.png";
+    return resolvedTheme === "dark"
+      ? "/main-logo-dark.png"
+      : "/main-logo-light.png";
   };
 
   const getTextClasses = () => {
@@ -101,7 +100,7 @@ export function Logo({
           fill
           className="object-contain"
           priority
-          sizes="(max-width: 768px) 64px, (max-width: 1200px) 80px, 96px"
+          sizes="(max-width: 768px) 56px, (max-width: 1200px) 72px, 96px"
           onError={() => {
             console.log("Logo image failed to load:", getLogoSrc());
           }}

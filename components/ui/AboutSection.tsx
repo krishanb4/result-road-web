@@ -2,6 +2,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { CheckCircle, Award, ArrowRight } from "lucide-react";
 import { useSeasonalColors } from "@/contexts/ThemeContext";
 
@@ -79,6 +80,21 @@ export function AboutSection() {
           </div>
 
           <div className="relative">
+            {/* Main Image */}
+            <div className="relative mb-8 rounded-3xl overflow-hidden shadow-xl group">
+              <div className="aspect-[4/3] relative">
+                <Image
+                  src="1.jpg" // ADD YOUR IMAGE URL HERE - Image 1 (kids playing with ball)
+                  alt="Children and participants engaging in inclusive fitness activities"
+                  fill
+                  className="object-cover group-hover:scale-105 transition-transform duration-500"
+                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
+              </div>
+            </div>
+
+            {/* Impact Stats Card */}
             <div
               className="rounded-3xl p-8 text-white shadow-xl transition-all duration-300 hover:scale-105"
               style={{
