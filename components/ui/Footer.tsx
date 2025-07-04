@@ -2,7 +2,7 @@
 "use client";
 
 import { Heart } from "lucide-react";
-import { Logo } from "./Logo";
+import { Logo } from "./LogoFooter";
 import { useSeasonalColors } from "@/contexts/ThemeContext";
 
 const quickLinks = [
