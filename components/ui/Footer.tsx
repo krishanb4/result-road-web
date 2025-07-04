@@ -6,14 +6,14 @@ import { Logo } from "./Logo";
 import { useSeasonalColors } from "@/contexts/ThemeContext";
 
 const quickLinks = [
-  { label: "About Us", href: "#about" },
-  { label: "Services", href: "#services" },
-  { label: "Programs", href: "#programs" },
+  { label: "About Us", href: "/about" },
+  { label: "Services", href: "/services" },
+  { label: "Programs", href: "/programs" },
   { label: "Get Started", href: "/signup" },
 ];
 
 const supportLinks = [
-  { label: "Contact Us", href: "#contact" },
+  { label: "Contact Us", href: "/contact" },
   { label: "Help Center", href: "#" },
   { label: "Privacy Policy", href: "#" },
   { label: "Terms of Service", href: "#" },
