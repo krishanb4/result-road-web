@@ -45,7 +45,7 @@ export function ProgramsSection() {
         {/* Left side background image */}
         <div className="absolute left-0 top-20 w-1/3 h-96 rounded-r-3xl overflow-hidden">
           <Image
-            src="" // ADD IMAGE URL HERE - Image 2 (instructor with battle ropes)
+            src="2.jpg" // ADD IMAGE URL HERE - Image 2 (instructor with battle ropes)
             alt="Strength training background"
             fill
             className="object-cover"

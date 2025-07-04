@@ -21,8 +21,8 @@ export function Navigation() {
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center space-x-8">
-            <a
-              href="#about"
+            <Link
+              href="/about"
               className="text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition-colors font-medium relative group"
             >
               About
@@ -30,9 +30,9 @@ export function Navigation() {
                 className="absolute inset-x-0 bottom-0 h-0.5 scale-x-0 group-hover:scale-x-100 transition-transform origin-left"
                 style={{ backgroundColor: seasonalColors.primary }}
               />
-            </a>
-            <a
-              href="#services"
+            </Link>
+            <Link
+              href="/services"
               className="text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition-colors font-medium relative group"
             >
               Services
@@ -40,9 +40,9 @@ export function Navigation() {
                 className="absolute inset-x-0 bottom-0 h-0.5 scale-x-0 group-hover:scale-x-100 transition-transform origin-left"
                 style={{ backgroundColor: seasonalColors.primary }}
               />
-            </a>
-            <a
-              href="#programs"
+            </Link>
+            <Link
+              href="/programs"
               className="text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition-colors font-medium relative group"
             >
               Programs
@@ -50,9 +50,9 @@ export function Navigation() {
                 className="absolute inset-x-0 bottom-0 h-0.5 scale-x-0 group-hover:scale-x-100 transition-transform origin-left"
                 style={{ backgroundColor: seasonalColors.primary }}
               />
-            </a>
-            <a
-              href="#events"
+            </Link>
+            <Link
+              href="/events"
               className="text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition-colors font-medium relative group"
             >
               Events
@@ -60,9 +60,9 @@ export function Navigation() {
                 className="absolute inset-x-0 bottom-0 h-0.5 scale-x-0 group-hover:scale-x-100 transition-transform origin-left"
                 style={{ backgroundColor: seasonalColors.primary }}
               />
-            </a>
-            <a
-              href="#store"
+            </Link>
+            <Link
+              href="/store"
               className="text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition-colors font-medium relative group"
             >
               Store
@@ -70,9 +70,9 @@ export function Navigation() {
                 className="absolute inset-x-0 bottom-0 h-0.5 scale-x-0 group-hover:scale-x-100 transition-transform origin-left"
                 style={{ backgroundColor: seasonalColors.primary }}
               />
-            </a>
-            <a
-              href="#contact"
+            </Link>
+            <Link
+              href="/contact"
               className="text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition-colors font-medium relative group"
             >
               Contact
@@ -80,7 +80,7 @@ export function Navigation() {
                 className="absolute inset-x-0 bottom-0 h-0.5 scale-x-0 group-hover:scale-x-100 transition-transform origin-left"
                 style={{ backgroundColor: seasonalColors.primary }}
               />
-            </a>
+            </Link>
           </div>
 
           {/* Desktop CTAs & Theme Toggle */}

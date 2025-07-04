@@ -47,7 +47,7 @@ export function Logo({
 
   const getLogoSrc = () => {
     if (variant === "white") {
-      return "/main-logo-dark.png"; // Always use light logo for white variant
+      return "/main-logo-light.png"; // Always use light logo for white variant
     }
     if (variant === "dark") {
       return "/main-logo-light.png"; // Always use dark logo for dark variant

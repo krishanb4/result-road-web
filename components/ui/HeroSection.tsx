@@ -8,7 +8,7 @@ import { motion, Variants } from "framer-motion";
 // Configuration for background video
 const VIDEO_CONFIG = {
   // Update this path to your video file
-  videoPath: "/videos/1.mp4", // Place your video in public/videos/
+  videoPath: "/videos/2.mp4", // Place your video in public/videos/
   // Fallback image if video fails to load
   fallbackImage: "/images/hero-fallback.jpg",
   // Video overlay opacity (0-1) - reduced for more video visibility
