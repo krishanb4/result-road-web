@@ -1,8 +1,7 @@
 "use client";
-
 import Link from "next/link";
 import { useState } from "react";
-import { ArrowRight, Menu, X } from "lucide-react";
+import { ArrowRight, Menu, X, UserPlus } from "lucide-react";
 import { ThemeToggle } from "./ThemeToggle";
 import { Logo } from "./Logo";
 import { useSeasonalColors } from "@/contexts/ThemeContext";
@@ -84,7 +83,7 @@ export function Navigation() {
           </div>
 
           {/* Desktop CTAs & Theme Toggle */}
-          <div className="hidden md:flex items-center space-x-6">
+          <div className="hidden md:flex items-center space-x-4">
             <ThemeToggle />
             <Link
               href="/login"
@@ -92,9 +91,15 @@ export function Navigation() {
             >
               Sign In
             </Link>
-            <Link
+            {/* <Link
               href="/signup"
-              className="text-white font-semibold px-8 py-3 rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl hover:scale-105 inline-flex items-center space-x-2"
+              className="text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition-colors font-medium px-5 py-2.5 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 border border-slate-300 dark:border-slate-600"
+            >
+              Get Started
+            </Link> */}
+            <Link
+              href="/register"
+              className="text-white font-semibold px-6 py-3 rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl hover:scale-105 inline-flex items-center space-x-2"
               style={{
                 backgroundColor: seasonalColors.primary,
               }}
@@ -106,8 +111,8 @@ export function Navigation() {
                 e.currentTarget.style.backgroundColor = seasonalColors.primary;
               }}
             >
-              <span>Get Started</span>
-              <ArrowRight className="w-4 h-4" />
+              <UserPlus className="w-4 h-4" />
+              <span>Register</span>
             </Link>
           </div>
 
@@ -173,6 +178,7 @@ export function Navigation() {
               >
                 Contact
               </a>
+
               <div className="pt-6 border-t border-slate-200 dark:border-slate-700 space-y-4">
                 <Link
                   href="/login"
@@ -183,13 +189,20 @@ export function Navigation() {
                 </Link>
                 <Link
                   href="/signup"
+                  className="block text-center text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white font-medium py-4 rounded-lg border border-slate-300 dark:border-slate-600"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  Get Started
+                </Link>
+                <Link
+                  href="/register"
                   className="block text-white font-semibold py-4 rounded-xl text-center"
                   style={{
                     backgroundColor: seasonalColors.primary,
                   }}
                   onClick={() => setMobileMenuOpen(false)}
                 >
-                  Get Started
+                  Register
                 </Link>
               </div>
             </div>

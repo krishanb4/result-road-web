@@ -1,6 +1,5 @@
 // app/programs/page.tsx
 "use client";
-
 import { Navigation } from "@/components/ui/Navigation";
 import { Footer } from "@/components/ui/Footer";
 import { useSeasonalColors } from "@/contexts/ThemeContext";
@@ -19,7 +18,6 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-
 const programFormats = [
   {
     icon: User,
@@ -46,7 +44,6 @@ const programFormats = [
     ],
   },
 ];
-
 const programLevels = [
   {
     level: "Entry Level",
@@ -67,7 +64,6 @@ const programLevels = [
     color: "#ef4444",
   },
 ];
-
 const soloPrograms = [
   {
     title: "Balance and Flow",
@@ -198,7 +194,6 @@ const soloPrograms = [
     featured: false,
   },
 ];
-
 const teamPrograms = [
   {
     title: "Rhythm and Motion",
@@ -297,10 +292,8 @@ const teamPrograms = [
     featured: false,
   },
 ];
-
 export default function ProgramsPage() {
   const seasonalColors = useSeasonalColors();
-
   const getLevelColor = (level: string) => {
     switch (level) {
       case "Entry":
@@ -313,19 +306,32 @@ export default function ProgramsPage() {
         return seasonalColors.primary;
     }
   };
-
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-900">
       <Navigation />
+      {/* Hero Section with Background Image */}
+      <section className="relative h-screen overflow-hidden flex items-center justify-center">
+        {/* Background Image */}
+        <div className="absolute inset-0 z-0">
+          <Image
+            src="/1.jpg" // Replace with your desired background image path
+            alt="Result Road programs background"
+            fill
+            className="object-cover"
+            priority
+            sizes="100vw"
+          />
+          {/* Overlay for better text readability */}
+          <div className="absolute inset-0 bg-black/40 dark:bg-black/60"></div>
+        </div>
 
-      {/* Hero Section */}
-      <section className="pt-32 pb-20 bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800">
-        <div className="max-w-6xl mx-auto px-6">
-          <div className="text-center mb-16">
-            <h1 className="text-5xl md:text-6xl font-bold text-slate-900 dark:text-white mb-6">
+        {/* Content */}
+        <div className="relative z-10 max-w-6xl mx-auto px-6">
+          <div className="text-center">
+            <h1 className="text-5xl md:text-6xl font-bold text-white mb-6 drop-shadow-lg">
               Our Programs
             </h1>
-            <p className="text-xl text-slate-600 dark:text-slate-300 max-w-3xl mx-auto leading-relaxed">
+            <p className="text-xl text-white/90 max-w-3xl mx-auto leading-relaxed drop-shadow-md">
               Structured, evidence-based 10-week programs designed to build
               strength, coordination, and confidence for participants of all
               ability levels. Choose between Solo and Team formats.
@@ -333,7 +339,6 @@ export default function ProgramsPage() {
           </div>
         </div>
       </section>
-
       {/* Program Formats */}
       <section className="py-20 bg-white dark:bg-slate-800">
         <div className="max-w-6xl mx-auto px-6">
@@ -346,7 +351,6 @@ export default function ProgramsPage() {
               preferences.
             </p>
           </div>
-
           <div className="grid md:grid-cols-2 gap-8">
             {programFormats.map((format, index) => (
               <div
@@ -389,7 +393,6 @@ export default function ProgramsPage() {
           </div>
         </div>
       </section>
-
       {/* Program Levels */}
       <section className="py-20 bg-slate-50 dark:bg-slate-900">
         <div className="max-w-6xl mx-auto px-6">
@@ -402,7 +405,6 @@ export default function ProgramsPage() {
               suits their current abilities and goals.
             </p>
           </div>
-
           <div className="grid md:grid-cols-3 gap-8">
             {programLevels.map((level, index) => (
               <div
@@ -429,7 +431,6 @@ export default function ProgramsPage() {
           </div>
         </div>
       </section>
-
       {/* Solo Programs */}
       <section className="py-20 bg-white dark:bg-slate-800">
         <div className="max-w-6xl mx-auto px-6">
@@ -442,7 +443,6 @@ export default function ProgramsPage() {
               with individualised plans.
             </p>
           </div>
-
           <div className="grid lg:grid-cols-2 gap-8">
             {soloPrograms.map((program, index) => (
               <div
@@ -462,7 +462,6 @@ export default function ProgramsPage() {
                     <span>Popular Program</span>
                   </div>
                 )}
-
                 <div className="relative h-48">
                   <Image
                     src={program.image}
@@ -488,12 +487,10 @@ export default function ProgramsPage() {
                     </div>
                   </div>
                 </div>
-
                 <div className="p-8">
                   <h3 className="text-2xl font-bold text-slate-900 dark:text-white mb-4">
                     {program.title}
                   </h3>
-
                   <div className="flex flex-wrap gap-2 mb-6">
                     {program.levels.map((level, levelIndex) => (
                       <span
@@ -505,11 +502,9 @@ export default function ProgramsPage() {
                       </span>
                     ))}
                   </div>
-
                   <p className="text-slate-600 dark:text-slate-300 mb-6 leading-relaxed">
                     {program.description}
                   </p>
-
                   <div className="space-y-6">
                     <div>
                       <h4 className="font-semibold text-slate-900 dark:text-white mb-3">
@@ -533,7 +528,6 @@ export default function ProgramsPage() {
                       </div>
                     </div>
                   </div>
-
                   <div className="mt-8 pt-6 border-t border-slate-200 dark:border-slate-700">
                     <Link
                       href="/contact"
@@ -549,7 +543,6 @@ export default function ProgramsPage() {
           </div>
         </div>
       </section>
-
       {/* Team Programs */}
       <section className="py-20 bg-slate-50 dark:bg-slate-900">
         <div className="max-w-6xl mx-auto px-6">
@@ -562,7 +555,6 @@ export default function ProgramsPage() {
               collaboration, encouragement and shared progress.
             </p>
           </div>
-
           <div className="grid lg:grid-cols-2 gap-8">
             {teamPrograms.map((program, index) => (
               <div
@@ -582,7 +574,6 @@ export default function ProgramsPage() {
                     <span>Popular Program</span>
                   </div>
                 )}
-
                 <div className="relative h-48">
                   <Image
                     src={program.image}
@@ -608,12 +599,10 @@ export default function ProgramsPage() {
                     </div>
                   </div>
                 </div>
-
                 <div className="p-8">
                   <h3 className="text-2xl font-bold text-slate-900 dark:text-white mb-4">
                     {program.title}
                   </h3>
-
                   <div className="flex flex-wrap gap-2 mb-6">
                     {program.levels.map((level, levelIndex) => (
                       <span
@@ -625,11 +614,9 @@ export default function ProgramsPage() {
                       </span>
                     ))}
                   </div>
-
                   <p className="text-slate-600 dark:text-slate-300 mb-6 leading-relaxed">
                     {program.description}
                   </p>
-
                   <div className="space-y-6">
                     <div>
                       <h4 className="font-semibold text-slate-900 dark:text-white mb-3">
@@ -653,7 +640,6 @@ export default function ProgramsPage() {
                       </div>
                     </div>
                   </div>
-
                   <div className="mt-8 pt-6 border-t border-slate-200 dark:border-slate-700">
                     <Link
                       href="/contact"
@@ -669,7 +655,6 @@ export default function ProgramsPage() {
           </div>
         </div>
       </section>
-
       {/* CTA Section */}
       <section
         className="py-20 relative"
@@ -701,7 +686,6 @@ export default function ProgramsPage() {
           </div>
         </div>
       </section>
-
       <Footer />
     </div>
   );

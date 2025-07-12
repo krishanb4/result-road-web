@@ -109,6 +109,19 @@ const buttonVariants: Variants = {
 export function HeroSection() {
   const seasonalColors = useSeasonalColors();
 
+  // Function to handle video button click
+  const handleWatchVideo = () => {
+    // Update URL hash to trigger scroll in ProgramsSection
+    window.location.hash = "#programs-videos";
+    // Smooth scroll to programs section
+    setTimeout(() => {
+      const element = document.getElementById("programs-videos");
+      if (element) {
+        element.scrollIntoView({ behavior: "smooth" });
+      }
+    }, 100);
+  };
+
   return (
     <section className="relative py-20 md:py-28 lg:py-32 overflow-hidden min-h-screen flex items-center">
       {/* Background Video */}
@@ -295,6 +308,7 @@ export function HeroSection() {
                   transition: { duration: 0.2 },
                 }}
                 whileTap={{ scale: 0.95 }}
+                onClick={handleWatchVideo}
                 className="bg-white/10 backdrop-blur-md border border-white/30 text-white font-semibold px-8 py-4 rounded-xl transition-all duration-200 inline-flex items-center justify-center space-x-2 group relative overflow-hidden shadow-lg"
               >
                 {/* Animated pulse effect */}

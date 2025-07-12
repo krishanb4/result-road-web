@@ -1,6 +1,5 @@
 // app/services/page.tsx
 "use client";
-
 import { Navigation } from "@/components/ui/Navigation";
 import { Footer } from "@/components/ui/Footer";
 import { useSeasonalColors } from "@/contexts/ThemeContext";
@@ -16,7 +15,6 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-
 const services = [
   {
     icon: Activity,
@@ -76,7 +74,6 @@ const services = [
     image: "/3.jpg",
   },
 ];
-
 const additionalServices = [
   {
     icon: Award,
@@ -102,22 +99,34 @@ const additionalServices = [
       "Regular social events and activities to build community connections.",
   },
 ];
-
 export default function ServicesPage() {
   const seasonalColors = useSeasonalColors();
-
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-900">
       <Navigation />
+      {/* Hero Section with Background Image */}
+      <section className="relative h-screen overflow-hidden flex items-center justify-center">
+        {/* Background Image */}
+        <div className="absolute inset-0 z-0">
+          <Image
+            src="/1.jpg" // Replace with your desired background image path
+            alt="Result Road services background"
+            fill
+            className="object-cover"
+            priority
+            sizes="100vw"
+          />
+          {/* Overlay for better text readability */}
+          <div className="absolute inset-0 bg-black/40 dark:bg-black/60"></div>
+        </div>
 
-      {/* Hero Section */}
-      <section className="pt-32 pb-20 bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800">
-        <div className="max-w-6xl mx-auto px-6">
-          <div className="text-center mb-16">
-            <h1 className="text-5xl md:text-6xl font-bold text-slate-900 dark:text-white mb-6">
+        {/* Content */}
+        <div className="relative z-10 max-w-6xl mx-auto px-6">
+          <div className="text-center">
+            <h1 className="text-5xl md:text-6xl font-bold text-white mb-6 drop-shadow-lg">
               Our Services
             </h1>
-            <p className="text-xl text-slate-600 dark:text-slate-300 max-w-3xl mx-auto leading-relaxed">
+            <p className="text-xl text-white/90 max-w-3xl mx-auto leading-relaxed drop-shadow-md">
               Comprehensive fitness and wellness services designed to support
               your journey towards better health, increased confidence, and
               community connection.
@@ -125,7 +134,6 @@ export default function ServicesPage() {
           </div>
         </div>
       </section>
-
       {/* Main Services */}
       <section className="py-20 bg-white dark:bg-slate-800">
         <div className="max-w-6xl mx-auto px-6">
@@ -138,7 +146,6 @@ export default function ServicesPage() {
               abilities.
             </p>
           </div>
-
           <div className="grid lg:grid-cols-2 gap-8">
             {services.map((service, index) => (
               <div
@@ -163,7 +170,6 @@ export default function ServicesPage() {
                     </div>
                   </div>
                 </div>
-
                 <div className="p-8">
                   <div className="flex justify-between items-start mb-4">
                     <h3 className="text-2xl font-bold text-slate-900 dark:text-white">
@@ -181,11 +187,9 @@ export default function ServicesPage() {
                       </div>
                     </div>
                   </div>
-
                   <p className="text-slate-600 dark:text-slate-300 mb-6 leading-relaxed">
                     {service.description}
                   </p>
-
                   <div className="space-y-3 mb-8">
                     {service.features.map((feature, featureIndex) => (
                       <div
@@ -202,7 +206,6 @@ export default function ServicesPage() {
                       </div>
                     ))}
                   </div>
-
                   <Link
                     href="/contact"
                     className="w-full text-white font-semibold py-3 rounded-xl transition-all duration-200 shadow-md hover:shadow-lg inline-flex items-center justify-center"
@@ -216,7 +219,6 @@ export default function ServicesPage() {
           </div>
         </div>
       </section>
-
       {/* Additional Services */}
       <section className="py-20 bg-slate-50 dark:bg-slate-900">
         <div className="max-w-6xl mx-auto px-6">
@@ -229,7 +231,6 @@ export default function ServicesPage() {
               experience.
             </p>
           </div>
-
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
             {additionalServices.map((service, index) => (
               <div
@@ -256,7 +257,6 @@ export default function ServicesPage() {
           </div>
         </div>
       </section>
-
       {/* CTA Section */}
       <section
         className="py-20 relative"
@@ -280,7 +280,6 @@ export default function ServicesPage() {
           </Link>
         </div>
       </section>
-
       <Footer />
     </div>
   );

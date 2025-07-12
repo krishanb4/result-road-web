@@ -3,7 +3,15 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { CheckCircle, Award, ArrowRight } from "lucide-react";
+import {
+  CheckCircle,
+  Award,
+  ArrowRight,
+  Users,
+  Building,
+  Target,
+  ThumbsUp,
+} from "lucide-react";
 import { useSeasonalColors } from "@/contexts/ThemeContext";
 
 const benefits = [
@@ -14,10 +22,30 @@ const benefits = [
 ];
 
 const impactStats = [
-  { value: "247+", label: "Participants" },
-  { value: "15", label: "Programs" },
-  { value: "8", label: "Facilities" },
-  { value: "94%", label: "Satisfaction" },
+  {
+    value: "247+",
+    label: "Participants",
+    description: "Active community members",
+    icon: Users,
+  },
+  {
+    value: "15",
+    label: "Programs",
+    description: "Specialized fitness programs",
+    icon: Target,
+  },
+  {
+    value: "8",
+    label: "Facilities",
+    description: "Partner locations",
+    icon: Building,
+  },
+  {
+    value: "94%",
+    label: "Satisfaction",
+    description: "Participant satisfaction rate",
+    icon: ThumbsUp,
+  },
 ];
 
 export function AboutSection() {
@@ -94,32 +122,65 @@ export function AboutSection() {
               </div>
             </div>
 
-            {/* Impact Stats Card */}
-            <div
-              className="rounded-3xl p-8 text-white shadow-xl transition-all duration-300 hover:scale-105"
-              style={{
-                background: `linear-gradient(135deg, ${seasonalColors.primary}, ${seasonalColors.primaryHover})`,
-              }}
-            >
-              <Award className="w-12 h-12 mb-6" />
-              <h3 className="text-2xl font-bold mb-6">Our Impact</h3>
-              <div className="grid grid-cols-2 gap-6">
-                {impactStats.map((stat, index) => (
-                  <div key={index} className="text-center">
-                    <div className="text-3xl font-bold mb-1">{stat.value}</div>
-                    <div className="text-white/80 text-sm">{stat.label}</div>
-                  </div>
-                ))}
+            {/* Impact Stats Section - Completely Redesigned */}
+            <div className="space-y-4">
+              {/* Header */}
+              <div className="flex items-center space-x-3 mb-6">
+                <div
+                  className="p-3 rounded-full"
+                  style={{ backgroundColor: seasonalColors.primary }}
+                >
+                  <Award className="w-6 h-6 text-white" />
+                </div>
+                <h3 className="text-2xl font-bold text-slate-900 dark:text-white">
+                  Our Impact
+                </h3>
               </div>
-            </div>
 
-            {/* Decorative glow effect */}
-            <div
-              className="absolute inset-0 rounded-3xl blur-xl opacity-20 -z-10"
-              style={{
-                background: `linear-gradient(135deg, ${seasonalColors.primary}, ${seasonalColors.primaryHover})`,
-              }}
-            />
+              {/* Stats Grid */}
+              <div className="grid grid-cols-2 gap-4">
+                {impactStats.map((stat, index) => {
+                  const IconComponent = stat.icon;
+                  return (
+                    <div
+                      key={index}
+                      className="bg-white dark:bg-slate-800 rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1 border border-slate-200 dark:border-slate-700"
+                    >
+                      <div className="flex items-center justify-between mb-4">
+                        <div
+                          className="p-2 rounded-lg"
+                          style={{
+                            backgroundColor: `${seasonalColors.primary}20`,
+                          }}
+                        >
+                          <IconComponent
+                            className="w-5 h-5"
+                            style={{ color: seasonalColors.primary }}
+                          />
+                        </div>
+                      </div>
+                      <div className="text-3xl font-bold text-slate-900 dark:text-white mb-1">
+                        {stat.value}
+                      </div>
+                      <div className="text-sm font-semibold text-slate-700 dark:text-slate-200 mb-1">
+                        {stat.label}
+                      </div>
+                      <div className="text-xs text-slate-500 dark:text-slate-400">
+                        {stat.description}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Bottom accent bar */}
+              <div
+                className="h-2 rounded-full mt-6"
+                style={{
+                  background: `linear-gradient(90deg, ${seasonalColors.primary}, ${seasonalColors.primaryHover})`,
+                }}
+              />
+            </div>
           </div>
         </div>
       </div>

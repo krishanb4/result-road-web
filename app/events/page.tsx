@@ -1,6 +1,5 @@
 // app/events/page.tsx
 "use client";
-
 import { Navigation } from "@/components/ui/Navigation";
 import { Footer } from "@/components/ui/Footer";
 import { useSeasonalColors } from "@/contexts/ThemeContext";
@@ -16,7 +15,6 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-
 const upcomingEvents = [
   {
     title: "Inclusive Sports Day",
@@ -91,7 +89,6 @@ const upcomingEvents = [
     category: "Challenge",
   },
 ];
-
 const pastEvents = [
   {
     title: "Annual Gala Dinner",
@@ -118,7 +115,6 @@ const pastEvents = [
     image: "/2.jpg",
   },
 ];
-
 const eventTypes = [
   {
     icon: Award,
@@ -145,22 +141,34 @@ const eventTypes = [
       "Inclusive events designed for participants and their families to enjoy together.",
   },
 ];
-
 export default function EventsPage() {
   const seasonalColors = useSeasonalColors();
-
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-900">
       <Navigation />
+      {/* Hero Section with Background Image */}
+      <section className="relative h-screen overflow-hidden flex items-center justify-center">
+        {/* Background Image */}
+        <div className="absolute inset-0 z-0">
+          <Image
+            src="/1.jpg" // Replace with your desired background image path
+            alt="Result Road events background"
+            fill
+            className="object-cover"
+            priority
+            sizes="100vw"
+          />
+          {/* Overlay for better text readability */}
+          <div className="absolute inset-0 bg-black/40 dark:bg-black/60"></div>
+        </div>
 
-      {/* Hero Section */}
-      <section className="pt-32 pb-20 bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800">
-        <div className="max-w-6xl mx-auto px-6">
-          <div className="text-center mb-16">
-            <h1 className="text-5xl md:text-6xl font-bold text-slate-900 dark:text-white mb-6">
+        {/* Content */}
+        <div className="relative z-10 max-w-6xl mx-auto px-6">
+          <div className="text-center">
+            <h1 className="text-5xl md:text-6xl font-bold text-white mb-6 drop-shadow-lg">
               Events & Activities
             </h1>
-            <p className="text-xl text-slate-600 dark:text-slate-300 max-w-3xl mx-auto leading-relaxed">
+            <p className="text-xl text-white/90 max-w-3xl mx-auto leading-relaxed drop-shadow-md">
               Join us for exciting events, competitions, workshops, and
               community gatherings that celebrate progress and build lasting
               connections.
@@ -168,7 +176,6 @@ export default function EventsPage() {
           </div>
         </div>
       </section>
-
       {/* Event Types */}
       <section className="py-20 bg-white dark:bg-slate-800">
         <div className="max-w-6xl mx-auto px-6">
@@ -181,7 +188,6 @@ export default function EventsPage() {
               community.
             </p>
           </div>
-
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
             {eventTypes.map((type, index) => (
               <div
@@ -208,7 +214,6 @@ export default function EventsPage() {
           </div>
         </div>
       </section>
-
       {/* Upcoming Events */}
       <section className="py-20 bg-slate-50 dark:bg-slate-900">
         <div className="max-w-6xl mx-auto px-6">
@@ -221,7 +226,6 @@ export default function EventsPage() {
               activities.
             </p>
           </div>
-
           <div className="grid lg:grid-cols-2 gap-8">
             {upcomingEvents.map((event, index) => (
               <div
@@ -244,7 +248,6 @@ export default function EventsPage() {
                     <span>Featured Event</span>
                   </div>
                 )}
-
                 <div className="relative h-48">
                   <Image
                     src={event.image}
@@ -270,12 +273,10 @@ export default function EventsPage() {
                     </div>
                   </div>
                 </div>
-
                 <div className="p-8">
                   <h3 className="text-2xl font-bold text-slate-900 dark:text-white mb-4">
                     {event.title}
                   </h3>
-
                   <div className="space-y-3 mb-6">
                     <div className="flex items-center space-x-3 text-slate-600 dark:text-slate-300">
                       <Calendar
@@ -306,11 +307,9 @@ export default function EventsPage() {
                       <span>{event.participants}</span>
                     </div>
                   </div>
-
                   <p className="text-slate-600 dark:text-slate-300 mb-6 leading-relaxed">
                     {event.description}
                   </p>
-
                   <div className="mb-8">
                     <h4 className="font-semibold text-slate-900 dark:text-white mb-3">
                       Event Highlights:
@@ -332,7 +331,6 @@ export default function EventsPage() {
                       ))}
                     </div>
                   </div>
-
                   <Link
                     href="/contact"
                     className="w-full text-white font-semibold py-3 rounded-xl transition-all duration-200 shadow-md hover:shadow-lg inline-flex items-center justify-center"
@@ -346,7 +344,6 @@ export default function EventsPage() {
           </div>
         </div>
       </section>
-
       {/* Past Events */}
       <section className="py-20 bg-white dark:bg-slate-800">
         <div className="max-w-6xl mx-auto px-6">
@@ -359,7 +356,6 @@ export default function EventsPage() {
               gatherings.
             </p>
           </div>
-
           <div className="grid md:grid-cols-3 gap-8">
             {pastEvents.map((event, index) => (
               <div
@@ -376,7 +372,6 @@ export default function EventsPage() {
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
                 </div>
-
                 <div className="p-6">
                   <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2">
                     {event.title}
@@ -409,7 +404,6 @@ export default function EventsPage() {
           </div>
         </div>
       </section>
-
       {/* CTA Section */}
       <section
         className="py-20 relative"
@@ -441,7 +435,6 @@ export default function EventsPage() {
           </div>
         </div>
       </section>
-
       <Footer />
     </div>
   );

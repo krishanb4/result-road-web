@@ -69,14 +69,29 @@ export default function AboutPage() {
     <div className="min-h-screen bg-slate-50 dark:bg-slate-900">
       <Navigation />
 
-      {/* Hero Section */}
-      <section className="pt-32 pb-20 bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800">
-        <div className="max-w-6xl mx-auto px-6">
-          <div className="text-center mb-16">
-            <h1 className="text-5xl md:text-6xl font-bold text-slate-900 dark:text-white mb-6">
+      {/* Hero Section with Background Image */}
+      <section className="relative h-screen overflow-hidden flex items-center justify-center">
+        {/* Background Image */}
+        <div className="absolute inset-0 z-0">
+          <Image
+            src="/1.jpg" // Replace with your desired background image path
+            alt="Result Road background"
+            fill
+            className="object-cover"
+            priority
+            sizes="100vw"
+          />
+          {/* Overlay for better text readability */}
+          <div className="absolute inset-0 bg-black/40 dark:bg-black/60"></div>
+        </div>
+
+        {/* Content */}
+        <div className="relative z-10 max-w-6xl mx-auto px-6">
+          <div className="text-center">
+            <h1 className="text-5xl md:text-6xl font-bold text-white mb-6 drop-shadow-lg">
               About Result Road
             </h1>
-            <p className="text-xl text-slate-600 dark:text-slate-300 max-w-3xl mx-auto leading-relaxed">
+            <p className="text-xl text-white/90 max-w-3xl mx-auto leading-relaxed drop-shadow-md">
               Empowering individuals and families through inclusive fitness
               programs, community support, and personal development
               opportunities.
