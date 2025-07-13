@@ -530,7 +530,7 @@ export default function ProgramsPage() {
                   </div>
                   <div className="mt-8 pt-6 border-t border-slate-200 dark:border-slate-700">
                     <Link
-                      href="/contact"
+                      href="/signup"
                       className="w-full text-white font-semibold py-3 rounded-xl transition-all duration-200 shadow-md hover:shadow-lg inline-flex items-center justify-center"
                       style={{ backgroundColor: seasonalColors.primary }}
                     >

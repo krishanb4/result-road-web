@@ -203,7 +203,7 @@ export function HeroSection() {
 
       {/* Content */}
       <div className="max-w-6xl mx-auto px-6 relative z-20">
-        <div className="max-w-4xl mx-auto text-center">
+        <div className="max-w-6xl mx-auto text-center">
           <motion.div
             variants={containerVariants}
             initial="hidden"
@@ -213,7 +213,7 @@ export function HeroSection() {
               variants={itemVariants}
               className="text-5xl md:text-6xl lg:text-7xl font-bold text-white mb-8 leading-tight drop-shadow-lg"
             >
-              Empowering Through
+              Sign Up for Spring Season Now
               <motion.span
                 className="block mt-2"
                 variants={itemVariants}
@@ -238,7 +238,7 @@ export function HeroSection() {
                     ease: "easeInOut",
                   }}
                 >
-                  Movement & Connection
+                  10 Week Camp - 1st September to 8 November 2025
                 </motion.span>
               </motion.span>
             </motion.h1>
@@ -247,9 +247,8 @@ export function HeroSection() {
               variants={itemVariants}
               className="text-xl md:text-2xl text-slate-200 mb-12 max-w-3xl mx-auto leading-relaxed drop-shadow-md"
             >
-              An inclusive fitness and personal development program designed to
-              support individuals living with disability and mental health
-              challenges through movement, community, and confidence building.
+              Followed by our Spring Season Celebration Showcase Dinner Party on
+              Saturday 8th November.
             </motion.p>
 
             <motion.div

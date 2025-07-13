@@ -36,15 +36,15 @@ const programs = [
   {
     title: "Balance & Coordination",
     level: "Moderate",
-    duration: "8 weeks",
+    duration: "10 weeks",
     description:
       "Improve balance, coordination, and proprioception through targeted exercises.",
     features: ["Balance control", "Coordination drills", "Fall prevention"],
   },
   {
     title: "Confidence Building",
-    level: "All Levels",
-    duration: "12 weeks",
+    level: "",
+    duration: "10 weeks",
     description:
       "Build self-confidence and social skills through group activities.",
     features: ["Social interaction", "Leadership skills", "Self-esteem"],
@@ -421,15 +421,17 @@ export function ProgramsSection() {
                   <h3 className="text-xl font-bold text-slate-900 dark:text-white">
                     {program.title}
                   </h3>
-                  <span
-                    className="px-3 py-1 rounded-full text-sm font-medium border text-white"
-                    style={{
-                      backgroundColor: seasonalColors.primary,
-                      borderColor: seasonalColors.primaryHover,
-                    }}
-                  >
-                    {program.level}
-                  </span>
+                  {program.level && (
+                    <span
+                      className="px-3 py-1 rounded-full text-sm font-medium border text-white"
+                      style={{
+                        backgroundColor: seasonalColors.primary,
+                        borderColor: seasonalColors.primaryHover,
+                      }}
+                    >
+                      {program.level}
+                    </span>
+                  )}
                 </div>
 
                 <div className="flex items-center space-x-4 mb-6 text-slate-600 dark:text-slate-300">
@@ -445,7 +447,7 @@ export function ProgramsSection() {
                       className="w-4 h-4"
                       style={{ color: seasonalColors.primary }}
                     />
-                    <span className="text-sm">3x/week</span>
+                    <span className="text-sm">1-3x/week</span>
                   </div>
                 </div>
 

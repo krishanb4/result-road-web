@@ -18,7 +18,7 @@ const contactInfo = [
   {
     icon: MapPin,
     label: "Location",
-    value: "Newcastle, Lake Macquarie & Hunter Region",
+    value: "Newcastle, Lake Macquarie & Nelson Bay",
   },
 ];
 
