@@ -1,429 +1,329 @@
 "use client";
 
+import React from "react";
 import Link from "next/link";
-import { ArrowRight, Play } from "lucide-react";
-import { useSeasonalColors } from "@/contexts/ThemeContext";
-import { motion, Variants } from "framer-motion";
+import { motion } from "framer-motion";
+import {
+  ArrowRight,
+  Play,
+  Users,
+  Award,
+  Target,
+  Sparkles,
+  ChevronDown,
+} from "lucide-react";
+import { useSeasonalTheme, useSeasonalColors } from "./SeasonalThemeContext";
 
-// Configuration for background video
-const VIDEO_CONFIG = {
-  // Update this path to your video file
-  videoPath: "/videos/2.mp4", // Place your video in public/videos/
-  // Fallback image if video fails to load
-  fallbackImage: "/images/hero-fallback.jpg",
-  // Video overlay opacity (0-1) - reduced for more video visibility
-  overlayOpacity: 0.3,
-};
+const stats = [
+  { number: "247+", label: "Participants", icon: Users },
+  { number: "15", label: "Programs", icon: Target },
+  { number: "94%", label: "Satisfaction", icon: Award },
+];
 
-// Floating animation variants with proper typing
-const floatingVariants: Variants = {
-  initial: { y: 0, rotate: 0 },
-  animate: {
-    y: [-20, 20, -20],
-    rotate: [-5, 5, -5],
-    transition: {
-      duration: 6,
-      repeat: Infinity,
-      ease: "easeInOut",
-    },
+const seasonalContent = {
+  spring: {
+    headline: "Bloom Into Your Best Self",
+    subheadline: "Spring Season Registration Open",
+    description: "10 Week Camp - 1st September to 8 November 2025",
+    ctaPrimary: "Start Your Journey",
+    ctaSecondary: "Watch Our Story",
+    videoUrl: "/videos/2.mp4", // Add your spring video path
   },
-};
-
-const floatingVariants2: Variants = {
-  initial: { y: 0, rotate: 0 },
-  animate: {
-    y: [20, -20, 20],
-    rotate: [5, -5, 5],
-    transition: {
-      duration: 8,
-      repeat: Infinity,
-      ease: "easeInOut",
-      delay: 1,
-    },
+  summer: {
+    headline: "Dive Into Summer Fitness",
+    subheadline: "Summer Intensive Programs Available",
+    description:
+      "Make this summer count with high-energy programs, outdoor activities, and beach-ready confidence building sessions.",
+    ctaPrimary: "Join Summer Session",
+    ctaSecondary: "Explore Programs",
+    videoUrl: "/videos/2.mp4", // Add your summer video path
   },
-};
-
-const floatingVariants3: Variants = {
-  initial: { y: 0, x: 0 },
-  animate: {
-    y: [-15, 15, -15],
-    x: [-10, 10, -10],
-    transition: {
-      duration: 10,
-      repeat: Infinity,
-      ease: "easeInOut",
-      delay: 2,
-    },
+  autumn: {
+    headline: "Harvest Your Potential",
+    subheadline: "Fall Programs Now Enrolling",
+    description:
+      "Embrace the season of change with our autumn fitness programs. Build strength, community, and lasting habits.",
+    ctaPrimary: "Enroll Today",
+    ctaSecondary: "Learn More",
+    videoUrl: "/videos/2.mp4", // Add your autumn video path
   },
-};
-
-// Text animation variants with proper typing
-const containerVariants: Variants = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: {
-      staggerChildren: 0.3,
-      delayChildren: 0.2,
-    },
-  },
-};
-
-const itemVariants: Variants = {
-  hidden: { y: 50, opacity: 0 },
-  visible: {
-    y: 0,
-    opacity: 1,
-    transition: {
-      duration: 0.8,
-      ease: "easeOut",
-    },
-  },
-};
-
-const buttonVariants: Variants = {
-  hidden: { y: 30, opacity: 0 },
-  visible: {
-    y: 0,
-    opacity: 1,
-    transition: {
-      duration: 0.6,
-      ease: "easeOut",
-    },
-  },
-  hover: {
-    scale: 1.05,
-    transition: {
-      duration: 0.2,
-      ease: "easeInOut",
-    },
-  },
-  tap: {
-    scale: 0.95,
-    transition: {
-      duration: 0.1,
-    },
+  winter: {
+    headline: "Winter Wellness Awaits",
+    subheadline: "Stay Strong Through Winter",
+    description:
+      "Don't let winter slow you down. Join our cozy indoor programs designed to keep you motivated and healthy all season long.",
+    ctaPrimary: "Get Started",
+    ctaSecondary: "View Schedule",
+    videoUrl: "/videos/2.mp4", // Add your winter video path
   },
 };
 
 export function HeroSection() {
-  const seasonalColors = useSeasonalColors();
+  const { currentSeason, currentTheme } = useSeasonalTheme();
+  const colors = useSeasonalColors();
 
-  // Function to handle video button click
-  const handleWatchVideo = () => {
-    // Update URL hash to trigger scroll in ProgramsSection
-    window.location.hash = "#programs-videos";
-    // Smooth scroll to programs section
-    setTimeout(() => {
-      const element = document.getElementById("programs-videos");
-      if (element) {
-        element.scrollIntoView({ behavior: "smooth" });
-      }
-    }, 100);
+  const content = seasonalContent[currentSeason];
+
+  // Function to scroll to programs section
+  const scrollToPrograms = () => {
+    const programsSection = document.getElementById("programs-section");
+    if (programsSection) {
+      programsSection.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    }
   };
 
   return (
-    <section className="relative py-20 md:py-28 lg:py-32 overflow-hidden min-h-screen flex items-center">
+    <section className="relative min-h-screen flex items-center justify-center overflow-hidden pt-20 sm:pt-24 md:pt-28">
       {/* Background Video */}
       <div className="absolute inset-0 w-full h-full">
         <video
           autoPlay
-          muted
           loop
+          muted
           playsInline
-          className="absolute inset-0 w-full h-full object-cover"
-          poster={VIDEO_CONFIG.fallbackImage}
+          className="w-full h-full object-cover"
+          style={{ filter: "brightness(0.7)" }}
         >
-          <source src={VIDEO_CONFIG.videoPath} type="video/mp4" />
-          {/* Fallback for browsers that don't support video */}
-          Your browser does not support the video tag.
+          <source src={content.videoUrl} type="video/mp4" />
+          {/* Fallback background */}
+          <div
+            className="w-full h-full"
+            style={{ background: colors.background }}
+          />
         </video>
 
-        {/* Video Overlay - Light overlay to maintain text readability */}
-        <div className="absolute inset-0 bg-black/30" />
+        {/* Video Overlay */}
+        <div
+          className="absolute inset-0"
+          style={{
+            background: `linear-gradient(135deg, ${colors.primary}20, ${colors.secondary}20)`,
+          }}
+        />
       </div>
 
-      {/* Animated Background Elements (over video) - reduced opacity */}
-      <div className="absolute inset-0 overflow-hidden z-10">
-        {/* Large floating shapes - more subtle */}
+      {/* Main content */}
+      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 text-center py-8 pb-20 sm:pb-24">
         <motion.div
-          variants={floatingVariants}
-          initial="initial"
-          animate="animate"
-          className="absolute -top-20 -left-20 w-96 h-96 opacity-10"
-          style={{
-            background: `radial-gradient(circle, ${seasonalColors.primary}20, transparent 70%)`,
-          }}
-        />
-
-        <motion.div
-          variants={floatingVariants2}
-          initial="initial"
-          animate="animate"
-          className="absolute -bottom-32 -right-32 w-80 h-80 opacity-10"
-          style={{
-            background: `radial-gradient(circle, ${seasonalColors.primaryHover}20, transparent 70%)`,
-          }}
-        />
-
-        <motion.div
-          variants={floatingVariants3}
-          initial="initial"
-          animate="animate"
-          className="absolute top-1/3 right-1/4 w-64 h-64 opacity-10"
-          style={{
-            background: `radial-gradient(circle, ${seasonalColors.primary}15, transparent 70%)`,
-          }}
-        />
-
-        {/* Animated dots/particles - more subtle */}
-        {[...Array(8)].map((_, i) => (
+          initial={{ opacity: 0, y: 50 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, ease: "easeOut" }}
+        >
+          {/* Season badge */}
           <motion.div
-            key={i}
-            className="absolute w-1.5 h-1.5 rounded-full opacity-30"
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 0.2, duration: 0.6 }}
+            className="inline-flex items-center space-x-2 px-4 sm:px-6 py-2 sm:py-3 rounded-full mb-6 sm:mb-8 backdrop-blur-sm border border-white/20"
             style={{
-              backgroundColor: seasonalColors.primary,
-              left: `${Math.random() * 100}%`,
-              top: `${Math.random() * 100}%`,
+              background: `${colors.primary}15`,
             }}
-            animate={{
-              y: [-10, 10, -10],
-              x: [-5, 5, -5],
-              opacity: [0.2, 0.4, 0.2],
-            }}
-            transition={{
-              duration: 4 + Math.random() * 4,
-              repeat: Infinity,
-              ease: "easeInOut",
-              delay: Math.random() * 2,
-            }}
-          />
-        ))}
-      </div>
-
-      {/* Content */}
-      <div className="max-w-6xl mx-auto px-6 relative z-20">
-        <div className="max-w-6xl mx-auto text-center">
-          <motion.div
-            variants={containerVariants}
-            initial="hidden"
-            animate="visible"
           >
-            <motion.h1
-              variants={itemVariants}
-              className="text-5xl md:text-6xl lg:text-7xl font-bold text-white mb-8 leading-tight drop-shadow-lg"
+            <Sparkles className="w-4 h-4" style={{ color: colors.primary }} />
+            <span className="font-semibold text-white text-sm sm:text-base">
+              {currentTheme.name}
+            </span>
+            <motion.div
+              animate={{ rotate: 360 }}
+              transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
             >
-              Sign Up for Spring Season Now
+              <Sparkles className="w-4 h-4" style={{ color: colors.accent }} />
+            </motion.div>
+          </motion.div>
+
+          {/* Main headline */}
+          <motion.h1
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.4, duration: 0.8 }}
+            className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl font-bold mb-4 sm:mb-6 leading-tight text-white px-2"
+          >
+            {content.headline.split(" ").map((word, index) => (
               <motion.span
-                className="block mt-2"
-                variants={itemVariants}
+                key={index}
+                className="inline-block mr-2 sm:mr-4"
+                initial={{ opacity: 0, y: 50 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{
+                  delay: 0.4 + index * 0.1,
+                  duration: 0.6,
+                  ease: "easeOut",
+                }}
                 whileHover={{
                   scale: 1.05,
-                  transition: { duration: 0.3 },
+                  color: colors.primary,
+                  transition: { duration: 0.2 },
                 }}
               >
-                <motion.span
-                  className="bg-clip-text text-transparent drop-shadow-lg"
-                  style={{
-                    background: `linear-gradient(135deg, ${seasonalColors.primary}, ${seasonalColors.primaryHover})`,
-                    WebkitBackgroundClip: "text",
-                    backgroundClip: "text",
-                  }}
-                  animate={{
-                    backgroundPosition: ["0% 50%", "100% 50%", "0% 50%"],
-                  }}
+                {word}
+              </motion.span>
+            ))}
+          </motion.h1>
+
+          {/* Subheadline */}
+          <motion.h2
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.8, duration: 0.6 }}
+            className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-semibold mb-4 sm:mb-6 text-white/90 px-2"
+          >
+            {content.subheadline}
+          </motion.h2>
+
+          {/* Description */}
+          <motion.p
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 1, duration: 0.6 }}
+            className="text-base sm:text-lg md:text-xl lg:text-2xl mb-8 sm:mb-12 max-w-3xl mx-auto leading-relaxed text-white/80 px-4"
+          >
+            {content.description}
+          </motion.p>
+
+          {/* CTA Buttons */}
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 1.2, duration: 0.6 }}
+            className="flex flex-col sm:flex-row gap-4 sm:gap-6 justify-center mb-12 sm:mb-16 px-4"
+          >
+            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+              <Link
+                href="/register"
+                className="group inline-flex items-center justify-center space-x-2 sm:space-x-3 px-6 sm:px-8 py-3 sm:py-4 text-base sm:text-lg font-semibold text-white rounded-xl sm:rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 relative overflow-hidden w-full sm:w-auto"
+                style={{
+                  background: `linear-gradient(135deg, ${colors.primary}, ${colors.secondary})`,
+                }}
+              >
+                <span className="relative z-10">{content.ctaPrimary}</span>
+                <motion.div
+                  className="relative z-10"
+                  animate={{ x: [0, 4, 0] }}
                   transition={{
-                    duration: 4,
+                    duration: 1.5,
                     repeat: Infinity,
                     ease: "easeInOut",
                   }}
                 >
-                  10 Week Camp - 1st September to 8 November 2025
-                </motion.span>
-              </motion.span>
-            </motion.h1>
+                  <ArrowRight className="w-4 sm:w-5 h-4 sm:h-5" />
+                </motion.div>
 
-            <motion.p
-              variants={itemVariants}
-              className="text-xl md:text-2xl text-slate-200 mb-12 max-w-3xl mx-auto leading-relaxed drop-shadow-md"
-            >
-              Followed by our Spring Season Celebration Showcase Dinner Party on
-              Saturday 8th November.
-            </motion.p>
+                {/* Hover effect */}
+                <motion.div
+                  className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0"
+                  initial={{ x: "-100%" }}
+                  whileHover={{ x: "100%" }}
+                  transition={{ duration: 0.6, ease: "easeInOut" }}
+                />
+              </Link>
+            </motion.div>
 
-            <motion.div
-              variants={itemVariants}
-              className="flex flex-col sm:flex-row gap-4 justify-center mb-16"
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={scrollToPrograms}
+              className="group inline-flex items-center justify-center space-x-2 sm:space-x-3 px-6 sm:px-8 py-3 sm:py-4 text-base sm:text-lg font-semibold rounded-xl sm:rounded-2xl border-2 backdrop-blur-sm transition-all duration-300 text-white border-white/50 bg-white/10 w-full sm:w-auto"
             >
               <motion.div
-                variants={buttonVariants}
-                whileHover="hover"
-                whileTap="tap"
+                animate={{ scale: [1, 1.1, 1] }}
+                transition={{
+                  duration: 2,
+                  repeat: Infinity,
+                  ease: "easeInOut",
+                }}
               >
-                <Link
-                  href="/signup"
-                  className="text-white font-semibold px-8 py-4 rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl inline-flex items-center justify-center space-x-2 relative overflow-hidden group"
-                  style={{
-                    backgroundColor: seasonalColors.primary,
+                <Play className="w-4 sm:w-5 h-4 sm:h-5" />
+              </motion.div>
+              <span>{content.ctaSecondary}</span>
+            </motion.button>
+          </motion.div>
+
+          {/* Stats */}
+          <motion.div
+            initial={{ opacity: 0, y: 40 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 1.4, duration: 0.8 }}
+            className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 lg:gap-8 max-w-4xl mx-auto px-4"
+          >
+            {stats.map((stat, index) => {
+              const Icon = stat.icon;
+              return (
+                <motion.div
+                  key={stat.label}
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: 1.6 + index * 0.2, duration: 0.6 }}
+                  whileHover={{
+                    scale: 1.05,
+                    transition: { duration: 0.2 },
                   }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.backgroundColor =
-                      seasonalColors.primaryHover;
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.backgroundColor =
-                      seasonalColors.primary;
-                  }}
+                  className="text-center p-4 sm:p-6 rounded-xl sm:rounded-2xl backdrop-blur-sm border border-white/20 bg-white/10"
                 >
-                  {/* Animated background shine effect */}
                   <motion.div
-                    className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent"
-                    initial={{ x: "-100%" }}
-                    whileHover={{
-                      x: "100%",
-                      transition: { duration: 0.6, ease: "easeInOut" },
+                    className="inline-flex items-center justify-center w-12 sm:w-16 h-12 sm:h-16 rounded-xl sm:rounded-2xl mb-3 sm:mb-4"
+                    style={{
+                      background: `linear-gradient(135deg, ${colors.primary}, ${colors.secondary})`,
                     }}
-                  />
-                  <span className="relative z-10">Join Result Road</span>
+                    animate={{ rotate: [0, 5, -5, 0] }}
+                    transition={{
+                      duration: 4,
+                      repeat: Infinity,
+                      ease: "easeInOut",
+                      delay: index * 0.5,
+                    }}
+                  >
+                    <Icon className="w-6 sm:w-8 h-6 sm:h-8 text-white" />
+                  </motion.div>
                   <motion.div
-                    className="relative z-10"
-                    animate={{ x: [0, 3, 0] }}
+                    className="text-2xl sm:text-3xl font-bold mb-1 sm:mb-2 text-white"
+                    animate={{
+                      scale: [1, 1.1, 1],
+                    }}
                     transition={{
                       duration: 2,
                       repeat: Infinity,
                       ease: "easeInOut",
-                    }}
-                  >
-                    <ArrowRight className="w-5 h-5" />
-                  </motion.div>
-                </Link>
-              </motion.div>
-
-              <motion.button
-                variants={buttonVariants}
-                whileHover={{
-                  scale: 1.05,
-                  backgroundColor: "rgba(255, 255, 255, 0.2)",
-                  transition: { duration: 0.2 },
-                }}
-                whileTap={{ scale: 0.95 }}
-                onClick={handleWatchVideo}
-                className="bg-white/10 backdrop-blur-md border border-white/30 text-white font-semibold px-8 py-4 rounded-xl transition-all duration-200 inline-flex items-center justify-center space-x-2 group relative overflow-hidden shadow-lg"
-              >
-                {/* Animated pulse effect */}
-                <motion.div
-                  className="absolute inset-0 rounded-xl"
-                  style={{ backgroundColor: `${seasonalColors.primary}20` }}
-                  animate={{
-                    scale: [1, 1.1, 1],
-                    opacity: [0, 0.3, 0],
-                  }}
-                  transition={{
-                    duration: 2,
-                    repeat: Infinity,
-                    ease: "easeInOut",
-                  }}
-                />
-
-                <motion.div
-                  animate={{
-                    scale: [1, 1.2, 1],
-                  }}
-                  transition={{
-                    duration: 2,
-                    repeat: Infinity,
-                    ease: "easeInOut",
-                  }}
-                >
-                  <Play className="w-5 h-5" />
-                </motion.div>
-                <span>Watch Video</span>
-              </motion.button>
-            </motion.div>
-
-            {/* Animated stats or features */}
-            <motion.div
-              variants={itemVariants}
-              className="flex flex-wrap justify-center gap-8 text-slate-300"
-            >
-              {[
-                { number: "247+", label: "Participants" },
-                { number: "15", label: "Programs" },
-                { number: "94%", label: "Satisfaction" },
-              ].map((stat, index) => (
-                <motion.div
-                  key={index}
-                  className="text-center"
-                  whileHover={{
-                    scale: 1.1,
-                    transition: { duration: 0.2 },
-                  }}
-                  animate={{
-                    y: [0, -5, 0],
-                  }}
-                  transition={{
-                    duration: 3,
-                    repeat: Infinity,
-                    ease: "easeInOut",
-                    delay: index * 0.5,
-                  }}
-                >
-                  <motion.div
-                    className="text-2xl font-bold mb-1 drop-shadow-md"
-                    style={{ color: seasonalColors.primary }}
-                    animate={{
-                      color: [
-                        seasonalColors.primary,
-                        seasonalColors.primaryHover,
-                        seasonalColors.primary,
-                      ],
-                    }}
-                    transition={{
-                      duration: 3,
-                      repeat: Infinity,
-                      ease: "easeInOut",
-                      delay: index * 0.2,
+                      delay: index * 0.3,
                     }}
                   >
                     {stat.number}
                   </motion.div>
-                  <div className="text-sm drop-shadow-sm">{stat.label}</div>
+                  <div className="text-sm sm:text-lg font-medium text-white/80">
+                    {stat.label}
+                  </div>
                 </motion.div>
-              ))}
-            </motion.div>
+              );
+            })}
           </motion.div>
-        </div>
+        </motion.div>
       </div>
 
       {/* Scroll indicator */}
       <motion.div
-        className="absolute bottom-8 left-1/2 transform -translate-x-1/2 z-20"
-        animate={{
-          y: [0, 10, 0],
-        }}
-        transition={{
-          duration: 2,
-          repeat: Infinity,
-          ease: "easeInOut",
-        }}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 2, duration: 1 }}
+        className="absolute bottom-4 sm:bottom-8 left-1/2 transform -translate-x-1/2 z-20"
       >
         <motion.div
-          className="w-6 h-10 border-2 border-white/60 rounded-full flex justify-center"
-          whileHover={{ scale: 1.1 }}
+          animate={{ y: [0, 10, 0] }}
+          transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+          className="flex flex-col items-center space-y-2 cursor-pointer"
+          onClick={() => {
+            window.scrollTo({ top: window.innerHeight, behavior: "smooth" });
+          }}
         >
+          <span className="text-xs sm:text-sm font-medium text-white/80">
+            Scroll to explore
+          </span>
           <motion.div
-            className="w-1 h-3 rounded-full mt-2"
-            style={{ backgroundColor: seasonalColors.primary }}
-            animate={{
-              y: [0, 12, 0],
-              opacity: [1, 0, 1],
-            }}
-            transition={{
-              duration: 2,
-              repeat: Infinity,
-              ease: "easeInOut",
-            }}
-          />
+            className="w-6 sm:w-8 h-6 sm:h-8 rounded-full flex items-center justify-center border-2 border-white/50"
+            whileHover={{ scale: 1.1 }}
+          >
+            <ChevronDown className="w-3 sm:w-4 h-3 sm:h-4 text-white" />
+          </motion.div>
         </motion.div>
       </motion.div>
     </section>
