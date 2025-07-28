@@ -1,8 +1,14 @@
 // app/events/page.tsx
 "use client";
+
 import { Navigation } from "@/components/ui/Navigation";
 import { Footer } from "@/components/ui/Footer";
-import { useSeasonalColors } from "@/contexts/ThemeContext";
+import {
+  useSeasonalTheme,
+  useSeasonalColors,
+} from "../../components/ui/SeasonalThemeContext";
+import { motion, useInView } from "framer-motion";
+import { useRef } from "react";
 import {
   Calendar,
   Clock,
@@ -12,109 +18,38 @@ import {
   Heart,
   Award,
   Zap,
+  ArrowRight,
+  Sparkles,
+  Image as ImageIcon,
+  PartyPopper,
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
+
 const upcomingEvents = [
   {
-    title: "Inclusive Sports Day",
-    date: "July 15, 2025",
-    time: "10:00 AM - 3:00 PM",
-    location: "Newcastle Community Center",
-    participants: "50+ expected",
+    title: "Result Road Spring Celebration",
+    date: "Friday 7th November",
+    time: "TBA",
+    location: "Dudley Footy Ground",
+    participants: "Community Welcome",
     description:
-      "A fun-filled day of adaptive sports activities, competitions, and community building.",
+      "Join us for our special Spring Celebration event! A day of community, fitness demonstrations, activities, and celebration of our Result Road family. More details coming soon.",
     highlights: [
-      "Wheelchair basketball",
-      "Adaptive swimming",
-      "Team challenges",
-      "Awards ceremony",
-    ],
-    image: "/4.jpg",
-    featured: true,
-    category: "Competition",
-  },
-  {
-    title: "Wellness Workshop Series",
-    date: "July 22, 2025",
-    time: "2:00 PM - 4:00 PM",
-    location: "Result Road Training Center",
-    participants: "20 spots available",
-    description:
-      "Monthly workshop focusing on mental health, nutrition, and holistic wellness approaches.",
-    highlights: [
-      "Expert speakers",
-      "Interactive sessions",
-      "Resource sharing",
-      "Q&A discussions",
+      "Community activities",
+      "Fitness demonstrations",
+      "Food and refreshments",
+      "Special presentations",
+      "Family-friendly fun",
+      "Achievement celebrations",
     ],
     image: "/1.jpg",
-    featured: false,
-    category: "Workshop",
-  },
-  {
-    title: "Family Fun Day",
-    date: "August 5, 2025",
-    time: "11:00 AM - 4:00 PM",
-    location: "Lakeside Park",
-    participants: "Families welcome",
-    description:
-      "Bring the whole family for a day of inclusive activities, games, and community connection.",
-    highlights: [
-      "Family activities",
-      "BBQ lunch",
-      "Kids zone",
-      "Information stalls",
-    ],
-    image: "/3.jpg",
-    featured: false,
-    category: "Community",
-  },
-  {
-    title: "Strength Challenge",
-    date: "August 18, 2025",
-    time: "9:00 AM - 12:00 PM",
-    location: "Result Road Gym",
-    participants: "Program participants",
-    description:
-      "Showcase your progress with friendly strength and fitness challenges.",
-    highlights: [
-      "Personal records",
-      "Team competitions",
-      "Achievement certificates",
-      "Celebration lunch",
-    ],
-    image: "/2.jpg",
     featured: true,
-    category: "Challenge",
+    category: "Celebration",
+    special: "Poster coming tomorrow morning!",
   },
 ];
-const pastEvents = [
-  {
-    title: "Annual Gala Dinner",
-    date: "May 20, 2025",
-    participants: "120 attendees",
-    description:
-      "Celebration of achievements and community impact with awards and recognition.",
-    image: "/1.jpg",
-  },
-  {
-    title: "Adaptive Fitness Expo",
-    date: "April 15, 2025",
-    participants: "200+ visitors",
-    description:
-      "Equipment demonstrations, workshops, and community networking event.",
-    image: "/4.jpg",
-  },
-  {
-    title: "Mental Health Awareness Week",
-    date: "March 10-16, 2025",
-    participants: "Week-long series",
-    description:
-      "Daily workshops and activities focused on mental health and wellbeing.",
-    image: "/2.jpg",
-  },
-];
+
 const eventTypes = [
   {
     icon: Award,
@@ -141,300 +76,690 @@ const eventTypes = [
       "Inclusive events designed for participants and their families to enjoy together.",
   },
 ];
+
+const getSeasonalContent = (season: string) => {
+  const content = {
+    spring: {
+      heroTitle: "Celebrating Growth & Community",
+      heroSubtitle:
+        "Join us for exciting events, competitions, workshops, and community gatherings that celebrate progress and build lasting connections - blossoming like spring itself.",
+      bgOverlay: "bg-emerald-500/20",
+      eventsTitle: "Spring Events & Activities",
+    },
+    summer: {
+      heroTitle: "Energizing Community Events",
+      heroSubtitle:
+        "Join us for exciting events, competitions, workshops, and community gatherings that celebrate progress and build lasting connections - radiating with summer energy.",
+      bgOverlay: "bg-blue-500/20",
+      eventsTitle: "Summer Events & Activities",
+    },
+    autumn: {
+      heroTitle: "Harvesting Community Connections",
+      heroSubtitle:
+        "Join us for exciting events, competitions, workshops, and community gatherings that celebrate progress and build lasting connections - celebrating like autumn's harvest.",
+      bgOverlay: "bg-orange-500/20",
+      eventsTitle: "Autumn Events & Activities",
+    },
+    winter: {
+      heroTitle: "Warming Hearts Through Events",
+      heroSubtitle:
+        "Join us for exciting events, competitions, workshops, and community gatherings that celebrate progress and build lasting connections - bringing warmth through every season.",
+      bgOverlay: "bg-slate-500/20",
+      eventsTitle: "Winter Events & Activities",
+    },
+  };
+
+  return content[season as keyof typeof content] || content.spring;
+};
+
 export default function EventsPage() {
+  const { currentSeason } = useSeasonalTheme();
   const seasonalColors = useSeasonalColors();
+  const typesRef = useRef<HTMLElement>(null);
+  const eventsRef = useRef<HTMLElement>(null);
+  const ctaRef = useRef<HTMLElement>(null);
+
+  const isTypesInView = useInView(typesRef, { once: true, margin: "-100px" });
+  const isEventsInView = useInView(eventsRef, { once: true, margin: "-100px" });
+  const isCtaInView = useInView(ctaRef, { once: true, margin: "-100px" });
+
+  const seasonalContent = getSeasonalContent(currentSeason);
+
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-900">
+    <div
+      className="min-h-screen"
+      style={{ backgroundColor: seasonalColors.background }}
+    >
       <Navigation />
-      {/* Hero Section with Background Image */}
+
+      {/* Hero Section with Seasonal Background */}
       <section className="relative h-screen overflow-hidden flex items-center justify-center">
         {/* Background Image */}
         <div className="absolute inset-0 z-0">
           <Image
-            src="/1.jpg" // Replace with your desired background image path
+            src="/8.jpg"
             alt="Result Road events background"
             fill
             className="object-cover"
             priority
             sizes="100vw"
           />
-          {/* Overlay for better text readability */}
+          {/* Seasonal Overlay */}
+          <div
+            className={`absolute inset-0 ${seasonalContent.bgOverlay}`}
+          ></div>
           <div className="absolute inset-0 bg-black/40 dark:bg-black/60"></div>
         </div>
 
+        {/* Seasonal Decorations */}
+        <motion.div
+          className="absolute top-20 left-20 w-32 h-32 rounded-full opacity-20"
+          style={{ backgroundColor: seasonalColors.primary }}
+          animate={{
+            scale: [1, 1.2, 1],
+            rotate: [0, 180, 360],
+          }}
+          transition={{
+            duration: 8,
+            repeat: Infinity,
+            ease: "easeInOut",
+          }}
+        />
+
+        <motion.div
+          className="absolute bottom-20 right-20 w-24 h-24 opacity-30"
+          style={{
+            backgroundColor: seasonalColors.accent,
+            clipPath: "polygon(50% 0%, 0% 100%, 100% 100%)",
+          }}
+          animate={{
+            y: [-10, 10, -10],
+            rotate: [0, 45, 0],
+          }}
+          transition={{
+            duration: 6,
+            repeat: Infinity,
+            ease: "easeInOut",
+          }}
+        />
+
         {/* Content */}
         <div className="relative z-10 max-w-6xl mx-auto px-6">
-          <div className="text-center">
-            <h1 className="text-5xl md:text-6xl font-bold text-white mb-6 drop-shadow-lg">
-              Events & Activities
-            </h1>
-            <p className="text-xl text-white/90 max-w-3xl mx-auto leading-relaxed drop-shadow-md">
-              Join us for exciting events, competitions, workshops, and
-              community gatherings that celebrate progress and build lasting
-              connections.
-            </p>
-          </div>
+          <motion.div
+            className="text-center"
+            initial={{ opacity: 0, y: 50 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 1, delay: 0.2 }}
+          >
+            {/* Seasonal Badge */}
+            <motion.div
+              className="inline-flex items-center space-x-2 px-6 py-3 rounded-full mb-8 backdrop-blur-sm border border-white/30"
+              style={{ background: `${seasonalColors.primary}20` }}
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.5, duration: 0.6 }}
+            >
+              <PartyPopper className="w-4 h-4 text-white" />
+              <span className="font-semibold text-white capitalize">
+                {currentSeason} Events
+              </span>
+            </motion.div>
+
+            <motion.h1
+              className="text-5xl md:text-6xl font-bold text-white mb-6 drop-shadow-lg"
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, delay: 0.7 }}
+            >
+              {seasonalContent.eventsTitle}
+            </motion.h1>
+
+            <motion.p
+              className="text-xl text-white/90 max-w-3xl mx-auto leading-relaxed drop-shadow-md"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.9 }}
+            >
+              {seasonalContent.heroSubtitle}
+            </motion.p>
+          </motion.div>
         </div>
       </section>
+
       {/* Event Types */}
-      <section className="py-20 bg-white dark:bg-slate-800">
+      <section
+        ref={typesRef}
+        className="py-20"
+        style={{ backgroundColor: seasonalColors.cardBackground }}
+      >
         <div className="max-w-6xl mx-auto px-6">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-slate-900 dark:text-white mb-6">
+          <motion.div
+            className="text-center mb-16"
+            initial={{ opacity: 0, y: 30 }}
+            animate={
+              isTypesInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 30 }
+            }
+            transition={{ duration: 0.8 }}
+          >
+            <h2
+              className="text-4xl font-bold mb-6"
+              style={{ color: seasonalColors.textPrimary }}
+            >
               Types of Events
             </h2>
-            <p className="text-xl text-slate-600 dark:text-slate-300 max-w-3xl mx-auto">
+            <p
+              className="text-xl max-w-3xl mx-auto"
+              style={{ color: seasonalColors.textSecondary }}
+            >
               We host a variety of events throughout the year to engage our
               community.
             </p>
-          </div>
+          </motion.div>
+
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
             {eventTypes.map((type, index) => (
-              <div
+              <motion.div
                 key={index}
-                className="text-center p-6 rounded-2xl bg-slate-50 dark:bg-slate-900 hover:shadow-lg transition-all duration-300"
+                className="text-center p-6 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 relative overflow-hidden group"
+                style={{ backgroundColor: seasonalColors.background }}
+                initial={{ opacity: 0, y: 50 }}
+                animate={
+                  isTypesInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 50 }
+                }
+                transition={{ delay: index * 0.1, duration: 0.6 }}
+                whileHover={{ scale: 1.05, y: -10 }}
               >
-                <div
-                  className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-6"
+                {/* Background animation */}
+                <motion.div
+                  className="absolute inset-0 opacity-0 group-hover:opacity-5 transition-opacity duration-300"
+                  style={{
+                    background: `radial-gradient(circle, ${seasonalColors.primary}, transparent 70%)`,
+                  }}
+                />
+
+                <motion.div
+                  className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-6 relative z-10"
                   style={{ backgroundColor: `${seasonalColors.primary}20` }}
+                  whileHover={{ rotate: 360, scale: 1.1 }}
+                  transition={{ duration: 0.6 }}
                 >
                   <type.icon
                     className="w-8 h-8"
                     style={{ color: seasonalColors.primary }}
                   />
-                </div>
-                <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-4">
+                </motion.div>
+
+                <h3
+                  className="text-xl font-bold mb-4 relative z-10"
+                  style={{ color: seasonalColors.textPrimary }}
+                >
                   {type.title}
                 </h3>
-                <p className="text-slate-600 dark:text-slate-300">
+
+                <p
+                  className="relative z-10"
+                  style={{ color: seasonalColors.textSecondary }}
+                >
                   {type.description}
                 </p>
-              </div>
+              </motion.div>
             ))}
           </div>
         </div>
       </section>
-      {/* Upcoming Events */}
-      <section className="py-20 bg-slate-50 dark:bg-slate-900">
+
+      {/* Featured Event - Spring Celebration */}
+      <section
+        ref={eventsRef}
+        className="py-20"
+        style={{ backgroundColor: seasonalColors.background }}
+      >
         <div className="max-w-6xl mx-auto px-6">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-slate-900 dark:text-white mb-6">
-              Upcoming Events
+          <motion.div
+            className="text-center mb-16"
+            initial={{ opacity: 0, y: 30 }}
+            animate={
+              isEventsInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 30 }
+            }
+            transition={{ duration: 0.8 }}
+          >
+            <h2
+              className="text-4xl font-bold mb-6"
+              style={{ color: seasonalColors.textPrimary }}
+            >
+              Featured Event
             </h2>
-            <p className="text-xl text-slate-600 dark:text-slate-300 max-w-3xl mx-auto">
-              Mark your calendar for these exciting upcoming events and
-              activities.
+            <p
+              className="text-xl max-w-3xl mx-auto"
+              style={{ color: seasonalColors.textSecondary }}
+            >
+              Don't miss our upcoming special celebration event!
             </p>
-          </div>
-          <div className="grid lg:grid-cols-2 gap-8">
+          </motion.div>
+
+          <div className="max-w-4xl mx-auto">
             {upcomingEvents.map((event, index) => (
-              <div
+              <motion.div
                 key={index}
-                className={`bg-white dark:bg-slate-800 rounded-3xl overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02] ${
-                  event.featured ? "ring-2 ring-opacity-50" : ""
-                } ${event.featured ? "" : ""}`}
-                style={
-                  event.featured
-                    ? { boxShadow: `0 0 0 2px ${seasonalColors.primary}80` }
-                    : {}
+                className="rounded-3xl overflow-hidden shadow-2xl hover:shadow-3xl transition-all duration-500 relative group"
+                style={{ backgroundColor: seasonalColors.cardBackground }}
+                initial={{ opacity: 0, y: 50 }}
+                animate={
+                  isEventsInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 50 }
                 }
+                transition={{ delay: 0.3, duration: 0.8 }}
+                whileHover={{ scale: 1.02, y: -10 }}
               >
-                {event.featured && (
-                  <div
-                    className="px-6 py-2 text-white text-sm font-semibold flex items-center justify-center space-x-2"
-                    style={{ backgroundColor: seasonalColors.primary }}
+                {/* Featured Badge */}
+                <motion.div
+                  className="px-6 py-3 text-white font-semibold flex items-center justify-center space-x-2 text-lg"
+                  style={{
+                    background: `linear-gradient(135deg, ${seasonalColors.primary}, ${seasonalColors.secondary})`,
+                  }}
+                  initial={{ opacity: 0, y: -20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.6, duration: 0.6 }}
+                >
+                  <motion.div
+                    animate={{ rotate: [0, 360] }}
+                    transition={{
+                      duration: 3,
+                      repeat: Infinity,
+                      ease: "linear",
+                    }}
                   >
-                    <Star className="w-4 h-4" />
-                    <span>Featured Event</span>
-                  </div>
-                )}
-                <div className="relative h-48">
+                    <Star className="w-5 h-5" />
+                  </motion.div>
+                  <span>Special Spring Event</span>
+                </motion.div>
+
+                <div className="relative h-64 md:h-80">
                   <Image
                     src={event.image}
                     alt={event.title}
                     fill
-                    className="object-cover"
-                    sizes="(max-width: 768px) 100vw, 50vw"
+                    className="object-cover transition-transform duration-700 group-hover:scale-110"
+                    sizes="100vw"
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-                  <div className="absolute bottom-4 left-4 right-4">
-                    <div className="flex justify-between items-end">
-                      <span
-                        className="px-3 py-1 rounded-full text-sm font-medium text-white"
-                        style={{
-                          backgroundColor: `${seasonalColors.primary}CC`,
-                        }}
-                      >
-                        {event.category}
-                      </span>
-                      <span className="text-white font-semibold">
-                        {event.date}
-                      </span>
-                    </div>
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+                  <div
+                    className="absolute inset-0 mix-blend-multiply opacity-20 group-hover:opacity-30 transition-opacity duration-500"
+                    style={{ backgroundColor: seasonalColors.primary }}
+                  />
+
+                  {/* Floating Elements */}
+                  <motion.div
+                    className="absolute top-6 right-6 px-4 py-2 rounded-full text-white font-semibold backdrop-blur-sm text-lg"
+                    style={{ backgroundColor: `${seasonalColors.accent}90` }}
+                    animate={{
+                      y: [-5, 5, -5],
+                      rotate: [0, 5, -5, 0],
+                    }}
+                    transition={{
+                      duration: 4,
+                      repeat: Infinity,
+                      ease: "easeInOut",
+                    }}
+                  >
+                    {event.category}
+                  </motion.div>
+
+                  <div className="absolute bottom-6 left-6 right-6">
+                    <motion.h3
+                      className="text-3xl md:text-4xl font-bold text-white mb-2"
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={
+                        isEventsInView
+                          ? { opacity: 1, y: 0 }
+                          : { opacity: 0, y: 20 }
+                      }
+                      transition={{ delay: 0.8, duration: 0.6 }}
+                    >
+                      {event.title}
+                    </motion.h3>
+                    <motion.p
+                      className="text-white/90 text-lg"
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={
+                        isEventsInView
+                          ? { opacity: 1, y: 0 }
+                          : { opacity: 0, y: 20 }
+                      }
+                      transition={{ delay: 1, duration: 0.6 }}
+                    >
+                      {event.date}
+                    </motion.p>
                   </div>
                 </div>
-                <div className="p-8">
-                  <h3 className="text-2xl font-bold text-slate-900 dark:text-white mb-4">
-                    {event.title}
-                  </h3>
-                  <div className="space-y-3 mb-6">
-                    <div className="flex items-center space-x-3 text-slate-600 dark:text-slate-300">
-                      <Calendar
-                        className="w-4 h-4"
-                        style={{ color: seasonalColors.primary }}
-                      />
-                      <span>{event.date}</span>
+
+                <div className="p-8 md:p-10">
+                  {/* Event Details */}
+                  <div className="grid md:grid-cols-2 gap-6 mb-8">
+                    <div className="space-y-4">
+                      <motion.div
+                        className="flex items-center space-x-3"
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={
+                          isEventsInView
+                            ? { opacity: 1, x: 0 }
+                            : { opacity: 0, x: -20 }
+                        }
+                        transition={{ delay: 1.2, duration: 0.5 }}
+                      >
+                        <Calendar
+                          className="w-5 h-5"
+                          style={{ color: seasonalColors.primary }}
+                        />
+                        <span
+                          className="font-semibold"
+                          style={{ color: seasonalColors.textPrimary }}
+                        >
+                          {event.date}
+                        </span>
+                      </motion.div>
+
+                      <motion.div
+                        className="flex items-center space-x-3"
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={
+                          isEventsInView
+                            ? { opacity: 1, x: 0 }
+                            : { opacity: 0, x: -20 }
+                        }
+                        transition={{ delay: 1.3, duration: 0.5 }}
+                      >
+                        <Clock
+                          className="w-5 h-5"
+                          style={{ color: seasonalColors.primary }}
+                        />
+                        <span style={{ color: seasonalColors.textSecondary }}>
+                          {event.time}
+                        </span>
+                      </motion.div>
+
+                      <motion.div
+                        className="flex items-center space-x-3"
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={
+                          isEventsInView
+                            ? { opacity: 1, x: 0 }
+                            : { opacity: 0, x: -20 }
+                        }
+                        transition={{ delay: 1.4, duration: 0.5 }}
+                      >
+                        <MapPin
+                          className="w-5 h-5"
+                          style={{ color: seasonalColors.primary }}
+                        />
+                        <span style={{ color: seasonalColors.textSecondary }}>
+                          {event.location}
+                        </span>
+                      </motion.div>
+
+                      <motion.div
+                        className="flex items-center space-x-3"
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={
+                          isEventsInView
+                            ? { opacity: 1, x: 0 }
+                            : { opacity: 0, x: -20 }
+                        }
+                        transition={{ delay: 1.5, duration: 0.5 }}
+                      >
+                        <Users
+                          className="w-5 h-5"
+                          style={{ color: seasonalColors.primary }}
+                        />
+                        <span style={{ color: seasonalColors.textSecondary }}>
+                          {event.participants}
+                        </span>
+                      </motion.div>
                     </div>
-                    <div className="flex items-center space-x-3 text-slate-600 dark:text-slate-300">
-                      <Clock
-                        className="w-4 h-4"
-                        style={{ color: seasonalColors.primary }}
-                      />
-                      <span>{event.time}</span>
-                    </div>
-                    <div className="flex items-center space-x-3 text-slate-600 dark:text-slate-300">
-                      <MapPin
-                        className="w-4 h-4"
-                        style={{ color: seasonalColors.primary }}
-                      />
-                      <span>{event.location}</span>
-                    </div>
-                    <div className="flex items-center space-x-3 text-slate-600 dark:text-slate-300">
-                      <Users
-                        className="w-4 h-4"
-                        style={{ color: seasonalColors.primary }}
-                      />
-                      <span>{event.participants}</span>
-                    </div>
+
+                    {/* Special Notice */}
+                    <motion.div
+                      className="p-4 rounded-2xl border-2 border-dashed relative overflow-hidden"
+                      style={{
+                        borderColor: seasonalColors.accent,
+                        backgroundColor: `${seasonalColors.accent}10`,
+                      }}
+                      initial={{ opacity: 0, scale: 0.9 }}
+                      animate={
+                        isEventsInView
+                          ? { opacity: 1, scale: 1 }
+                          : { opacity: 0, scale: 0.9 }
+                      }
+                      transition={{ delay: 1.6, duration: 0.6 }}
+                      whileHover={{ scale: 1.05 }}
+                    >
+                      <motion.div
+                        animate={{ rotate: [0, 360] }}
+                        transition={{
+                          duration: 4,
+                          repeat: Infinity,
+                          ease: "linear",
+                        }}
+                        className="absolute top-2 right-2"
+                      >
+                        <ImageIcon
+                          className="w-6 h-6"
+                          style={{ color: seasonalColors.accent }}
+                        />
+                      </motion.div>
+
+                      <h4
+                        className="font-bold mb-2 text-lg"
+                        style={{ color: seasonalColors.accent }}
+                      >
+                        Coming Soon!
+                      </h4>
+                      <p
+                        className="text-sm font-medium"
+                        style={{ color: seasonalColors.textPrimary }}
+                      >
+                        {event.special}
+                      </p>
+                    </motion.div>
                   </div>
-                  <p className="text-slate-600 dark:text-slate-300 mb-6 leading-relaxed">
+
+                  <motion.p
+                    className="text-lg mb-8 leading-relaxed"
+                    style={{ color: seasonalColors.textSecondary }}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={
+                      isEventsInView
+                        ? { opacity: 1, y: 0 }
+                        : { opacity: 0, y: 20 }
+                    }
+                    transition={{ delay: 1.7, duration: 0.6 }}
+                  >
                     {event.description}
-                  </p>
-                  <div className="mb-8">
-                    <h4 className="font-semibold text-slate-900 dark:text-white mb-3">
+                  </motion.p>
+
+                  {/* Event Highlights */}
+                  <motion.div
+                    className="mb-8"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={
+                      isEventsInView
+                        ? { opacity: 1, y: 0 }
+                        : { opacity: 0, y: 20 }
+                    }
+                    transition={{ delay: 1.8, duration: 0.6 }}
+                  >
+                    <h4
+                      className="font-bold mb-4 text-xl"
+                      style={{ color: seasonalColors.textPrimary }}
+                    >
                       Event Highlights:
                     </h4>
-                    <div className="grid grid-cols-2 gap-2">
+                    <div className="grid md:grid-cols-2 gap-3">
                       {event.highlights.map((highlight, highlightIndex) => (
-                        <div
+                        <motion.div
                           key={highlightIndex}
-                          className="flex items-center space-x-2"
+                          className="flex items-center space-x-3"
+                          initial={{ opacity: 0, x: -20 }}
+                          animate={
+                            isEventsInView
+                              ? { opacity: 1, x: 0 }
+                              : { opacity: 0, x: -20 }
+                          }
+                          transition={{
+                            delay: 1.9 + highlightIndex * 0.1,
+                            duration: 0.4,
+                          }}
                         >
-                          <Star
-                            className="w-3 h-3 flex-shrink-0"
+                          <Sparkles
+                            className="w-4 h-4 flex-shrink-0"
                             style={{ color: seasonalColors.primary }}
                           />
-                          <span className="text-slate-600 dark:text-slate-300 text-sm">
+                          <span style={{ color: seasonalColors.textSecondary }}>
                             {highlight}
                           </span>
-                        </div>
+                        </motion.div>
                       ))}
                     </div>
-                  </div>
-                  <Link
-                    href="/contact"
-                    className="w-full text-white font-semibold py-3 rounded-xl transition-all duration-200 shadow-md hover:shadow-lg inline-flex items-center justify-center"
-                    style={{ backgroundColor: seasonalColors.primary }}
+                  </motion.div>
+
+                  {/* CTA Button */}
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={
+                      isEventsInView
+                        ? { opacity: 1, y: 0 }
+                        : { opacity: 0, y: 20 }
+                    }
+                    transition={{ delay: 2.2, duration: 0.6 }}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
                   >
-                    Register Now
-                  </Link>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-      {/* Past Events */}
-      <section className="py-20 bg-white dark:bg-slate-800">
-        <div className="max-w-6xl mx-auto px-6">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-slate-900 dark:text-white mb-6">
-              Recent Events
-            </h2>
-            <p className="text-xl text-slate-600 dark:text-slate-300 max-w-3xl mx-auto">
-              Take a look at some of our recent successful events and community
-              gatherings.
-            </p>
-          </div>
-          <div className="grid md:grid-cols-3 gap-8">
-            {pastEvents.map((event, index) => (
-              <div
-                key={index}
-                className="bg-slate-50 dark:bg-slate-900 rounded-2xl overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105"
-              >
-                <div className="relative h-40">
-                  <Image
-                    src={event.image}
-                    alt={event.title}
-                    fill
-                    className="object-cover"
-                    sizes="(max-width: 768px) 100vw, 33vw"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-                </div>
-                <div className="p-6">
-                  <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2">
-                    {event.title}
-                  </h3>
-                  <div className="flex items-center space-x-3 mb-4 text-slate-600 dark:text-slate-300">
-                    <Calendar
-                      className="w-4 h-4"
-                      style={{ color: seasonalColors.primary }}
-                    />
-                    <span className="text-sm">{event.date}</span>
-                  </div>
-                  <p className="text-slate-600 dark:text-slate-300 text-sm mb-4">
-                    {event.description}
-                  </p>
-                  <div className="flex items-center space-x-2">
-                    <Users
-                      className="w-4 h-4"
-                      style={{ color: seasonalColors.primary }}
-                    />
-                    <span
-                      className="text-sm font-medium"
-                      style={{ color: seasonalColors.primary }}
+                    <Link
+                      href="/contact"
+                      className="w-full font-bold py-4 rounded-2xl transition-all duration-300 shadow-lg hover:shadow-2xl inline-flex items-center justify-center space-x-3 text-white text-lg group"
+                      style={{
+                        background: `linear-gradient(135deg, ${seasonalColors.primary}, ${seasonalColors.secondary})`,
+                      }}
                     >
-                      {event.participants}
-                    </span>
-                  </div>
+                      <span>Register Interest</span>
+                      <motion.div
+                        animate={{ x: [0, 4, 0] }}
+                        transition={{
+                          duration: 1.5,
+                          repeat: Infinity,
+                          ease: "easeInOut",
+                        }}
+                      >
+                        <ArrowRight className="w-5 h-5" />
+                      </motion.div>
+                    </Link>
+                  </motion.div>
                 </div>
-              </div>
+              </motion.div>
             ))}
           </div>
         </div>
       </section>
+
       {/* CTA Section */}
       <section
-        className="py-20 relative"
+        ref={ctaRef}
+        className="py-20 relative overflow-hidden"
         style={{
-          background: `linear-gradient(135deg, ${seasonalColors.primary}, ${seasonalColors.primaryHover})`,
+          background: `linear-gradient(135deg, ${seasonalColors.primary}, ${seasonalColors.secondary})`,
         }}
       >
-        <div className="max-w-6xl mx-auto px-6 text-center">
-          <h2 className="text-4xl font-bold text-white mb-6">
-            Don't Miss Out on Future Events
-          </h2>
-          <p className="text-xl text-white/90 mb-8 max-w-2xl mx-auto">
-            Stay connected with Result Road to be the first to know about
-            upcoming events and activities.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link
-              href="/contact"
-              className="bg-white text-slate-900 font-semibold px-8 py-4 rounded-xl hover:bg-slate-50 transition-all duration-300 inline-flex items-center justify-center space-x-2 shadow-lg hover:shadow-xl hover:scale-105"
+        {/* Background decorations */}
+        <motion.div
+          className="absolute top-10 right-10 w-40 h-40 rounded-full opacity-10"
+          style={{ backgroundColor: "white" }}
+          animate={{
+            scale: [1, 1.3, 1],
+            rotate: [0, 360, 0],
+          }}
+          transition={{
+            duration: 20,
+            repeat: Infinity,
+            ease: "linear",
+          }}
+        />
+
+        <div className="max-w-6xl mx-auto px-6 text-center relative z-10">
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={isCtaInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 30 }}
+            transition={{ duration: 0.8 }}
+          >
+            <motion.div
+              className="w-20 h-20 rounded-3xl mx-auto mb-8 flex items-center justify-center bg-white/20 backdrop-blur-sm"
+              animate={{
+                scale: [1, 1.1, 1],
+                rotate: [0, 10, -10, 0],
+              }}
+              transition={{
+                duration: 4,
+                repeat: Infinity,
+                ease: "easeInOut",
+              }}
             >
-              <span>Get Event Updates</span>
-            </Link>
-            <Link
-              href="/programs"
-              className="border-2 border-white text-white font-semibold px-8 py-4 rounded-xl hover:bg-white hover:text-slate-900 hover:scale-105 transition-all duration-300 inline-flex items-center justify-center space-x-2 backdrop-blur-sm"
-            >
-              <span>View Programs</span>
-            </Link>
-          </div>
+              <PartyPopper className="w-10 h-10 text-white" />
+            </motion.div>
+
+            <h2 className="text-4xl font-bold text-white mb-6">
+              Don't Miss Out on Future Events
+            </h2>
+
+            <p className="text-xl text-white/90 mb-8 max-w-2xl mx-auto">
+              Stay connected with Result Road to be the first to know about
+              upcoming events and activities.
+            </p>
+
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <motion.div
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                <Link
+                  href="/contact"
+                  className="bg-white font-semibold px-8 py-4 rounded-xl transition-all duration-300 inline-flex items-center justify-center space-x-2 shadow-lg hover:shadow-2xl group"
+                  style={{ color: seasonalColors.primary }}
+                >
+                  <span>Get Event Updates</span>
+                  <motion.div
+                    animate={{ x: [0, 4, 0] }}
+                    transition={{
+                      duration: 1.5,
+                      repeat: Infinity,
+                      ease: "easeInOut",
+                    }}
+                  >
+                    <ArrowRight className="w-5 h-5" />
+                  </motion.div>
+                </Link>
+              </motion.div>
+
+              <motion.div
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                <Link
+                  href="/programs"
+                  className="border-2 border-white text-white font-semibold px-8 py-4 rounded-xl transition-all duration-300 inline-flex items-center justify-center space-x-2 backdrop-blur-sm hover:bg-white group"
+                  style={{ borderColor: "white" }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.color = seasonalColors.primary;
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.color = "white";
+                  }}
+                >
+                  <span>View Programs</span>
+                </Link>
+              </motion.div>
+            </div>
+          </motion.div>
         </div>
       </section>
+
       <Footer />
     </div>
   );

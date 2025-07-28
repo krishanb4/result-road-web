@@ -3,7 +3,12 @@
 
 import { Navigation } from "@/components/ui/Navigation";
 import { Footer } from "@/components/ui/Footer";
-import { useSeasonalColors } from "@/contexts/ThemeContext";
+import {
+  useSeasonalTheme,
+  useSeasonalColors,
+} from "../../components/ui/SeasonalThemeContext";
+import { motion, useInView } from "framer-motion";
+import { useRef } from "react";
 import {
   ShoppingCart,
   Star,
@@ -12,153 +17,19 @@ import {
   Truck,
   Shield,
   Gift,
+  ArrowRight,
+  Sparkles,
+  Clock,
+  Bell,
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-
-const categories = [
-  {
-    icon: Package,
-    title: "Apparel",
-    description: "Result Road branded clothing and accessories",
-    itemCount: "12 items",
-  },
-  {
-    icon: Gift,
-    title: "Equipment",
-    description: "Adaptive fitness equipment and accessories",
-    itemCount: "8 items",
-  },
-  {
-    icon: Heart,
-    title: "Wellness",
-    description: "Health and wellness products",
-    itemCount: "6 items",
-  },
-  {
-    icon: Star,
-    title: "Gifts",
-    description: "Perfect gifts for participants and supporters",
-    itemCount: "10 items",
-  },
-];
-
-const featuredProducts = [
-  {
-    name: "Result Road Performance T-Shirt",
-    price: "$29.95",
-    originalPrice: "$39.95",
-    category: "Apparel",
-    rating: 4.8,
-    reviews: 24,
-    description:
-      "Comfortable, moisture-wicking performance tee with Result Road logo.",
-    features: [
-      "Moisture-wicking fabric",
-      "Comfortable fit",
-      "Durable design",
-      "Available in multiple colors",
-    ],
-    image: "1.jpg",
-    featured: true,
-    sale: true,
-  },
-  {
-    name: "Adaptive Exercise Kit",
-    price: "$89.95",
-    category: "Equipment",
-    rating: 4.9,
-    reviews: 18,
-    description:
-      "Complete kit of adaptive exercise equipment for home workouts.",
-    features: [
-      "Resistance bands",
-      "Balance disc",
-      "Exercise guide",
-      "Storage bag included",
-    ],
-    image: "2.jpg",
-    featured: true,
-    sale: false,
-  },
-  {
-    name: "Result Road Water Bottle",
-    price: "$19.95",
-    category: "Accessories",
-    rating: 4.7,
-    reviews: 32,
-    description:
-      "Insulated stainless steel water bottle with motivational quotes.",
-    features: [
-      "Double-wall insulation",
-      "24oz capacity",
-      "Leak-proof design",
-      "Dishwasher safe",
-    ],
-    image: "3.jpg",
-    featured: false,
-    sale: false,
-  },
-  {
-    name: "Wellness Journal",
-    price: "$24.95",
-    category: "Wellness",
-    rating: 4.6,
-    reviews: 15,
-    description:
-      "Guided journal for tracking fitness goals and mental wellness.",
-    features: [
-      "12-week format",
-      "Goal tracking pages",
-      "Reflection prompts",
-      "Progress charts",
-    ],
-    image: "4.jpg",
-    featured: false,
-    sale: false,
-  },
-  {
-    name: "Result Road Hoodie",
-    price: "$54.95",
-    category: "Apparel",
-    rating: 4.9,
-    reviews: 28,
-    description: "Premium quality hoodie with embroidered Result Road logo.",
-    features: [
-      "Cotton blend material",
-      "Comfortable fit",
-      "Kangaroo pocket",
-      "Unisex design",
-    ],
-    image: "1.jpg",
-    featured: true,
-    sale: false,
-  },
-  {
-    name: "Mindfulness Card Deck",
-    price: "$16.95",
-    category: "Wellness",
-    rating: 4.5,
-    reviews: 12,
-    description:
-      "52 cards with mindfulness exercises and motivational messages.",
-    features: [
-      "52 unique cards",
-      "Portable size",
-      "Daily exercises",
-      "Beautiful illustrations",
-    ],
-    image: "2.jpg",
-    featured: false,
-    sale: false,
-  },
-];
 
 const storeFeatures = [
   {
     icon: Truck,
     title: "Free Shipping",
-    description: "Free shipping on orders over $50 within Australia",
+    description: "Free shipping on orders over $150 within Australia",
   },
   {
     icon: Shield,
@@ -172,312 +43,565 @@ const storeFeatures = [
   },
   {
     icon: Gift,
-    title: "Gift Options",
-    description: "Gift wrapping and personalized messages available",
+    title: "Gift Cards Available",
+    description:
+      "Perfect gifts with flexible amounts and personalized messages",
   },
 ];
 
+const getSeasonalContent = (season: string) => {
+  const content = {
+    spring: {
+      heroTitle: "Growing Our Store Together",
+      heroSubtitle:
+        "Shop Result Road branded merchandise and adaptive fitness equipment. Every purchase supports our community programs and participants - growing like spring itself.",
+      bgOverlay: "bg-emerald-500/20",
+    },
+    summer: {
+      heroTitle: "Energizing Shopping Experience",
+      heroSubtitle:
+        "Shop Result Road branded merchandise and adaptive fitness equipment. Every purchase supports our community programs and participants - radiating with summer energy.",
+      bgOverlay: "bg-blue-500/20",
+    },
+    autumn: {
+      heroTitle: "Harvesting Community Support",
+      heroSubtitle:
+        "Shop Result Road branded merchandise and adaptive fitness equipment. Every purchase supports our community programs and participants - celebrating like autumn's harvest.",
+      bgOverlay: "bg-orange-500/20",
+    },
+    winter: {
+      heroTitle: "Warming Hearts Through Shopping",
+      heroSubtitle:
+        "Shop Result Road branded merchandise and adaptive fitness equipment. Every purchase supports our community programs and participants - providing comfort through every season.",
+      bgOverlay: "bg-slate-500/20",
+    },
+  };
+
+  return content[season as keyof typeof content] || content.spring;
+};
+
 export default function StorePage() {
+  const { currentSeason } = useSeasonalTheme();
   const seasonalColors = useSeasonalColors();
+  const featuresRef = useRef<HTMLElement>(null);
+  const messageRef = useRef<HTMLElement>(null);
+  const newsletterRef = useRef<HTMLElement>(null);
+  const ctaRef = useRef<HTMLElement>(null);
+
+  const isFeaturesInView = useInView(featuresRef, {
+    once: true,
+    margin: "-100px",
+  });
+  const isMessageInView = useInView(messageRef, {
+    once: true,
+    margin: "-100px",
+  });
+  const isNewsletterInView = useInView(newsletterRef, {
+    once: true,
+    margin: "-100px",
+  });
+  const isCtaInView = useInView(ctaRef, { once: true, margin: "-100px" });
+
+  const seasonalContent = getSeasonalContent(currentSeason);
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-900">
+    <div
+      className="min-h-screen"
+      style={{ backgroundColor: seasonalColors.background }}
+    >
       <Navigation />
 
-      {/* Hero Section with Background Image */}
+      {/* Hero Section with Seasonal Background */}
       <section className="relative h-screen overflow-hidden flex items-center justify-center">
         {/* Background Image */}
         <div className="absolute inset-0 z-0">
           <Image
-            src="/1.jpg" // Replace with your desired background image path
+            src="/9.jpg"
             alt="Result Road store background"
             fill
             className="object-cover"
             priority
             sizes="100vw"
           />
-          {/* Overlay for better text readability */}
+          {/* Seasonal Overlay */}
+          <div
+            className={`absolute inset-0 ${seasonalContent.bgOverlay}`}
+          ></div>
           <div className="absolute inset-0 bg-black/40 dark:bg-black/60"></div>
         </div>
 
+        {/* Seasonal Decorations */}
+        <motion.div
+          className="absolute top-20 right-20 w-32 h-32 rounded-full opacity-20"
+          style={{ backgroundColor: seasonalColors.primary }}
+          animate={{
+            scale: [1, 1.2, 1],
+            rotate: [0, 180, 360],
+          }}
+          transition={{
+            duration: 8,
+            repeat: Infinity,
+            ease: "easeInOut",
+          }}
+        />
+
+        <motion.div
+          className="absolute bottom-20 left-20 w-24 h-24 opacity-30"
+          style={{
+            backgroundColor: seasonalColors.accent,
+            clipPath: "polygon(50% 0%, 0% 100%, 100% 100%)",
+          }}
+          animate={{
+            y: [-10, 10, -10],
+            rotate: [0, 45, 0],
+          }}
+          transition={{
+            duration: 6,
+            repeat: Infinity,
+            ease: "easeInOut",
+          }}
+        />
+
         {/* Content */}
         <div className="relative z-10 max-w-6xl mx-auto px-6">
-          <div className="text-center">
-            <h1 className="text-5xl md:text-6xl font-bold text-white mb-6 drop-shadow-lg">
+          <motion.div
+            className="text-center"
+            initial={{ opacity: 0, y: 50 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 1, delay: 0.2 }}
+          >
+            {/* Seasonal Badge */}
+            <motion.div
+              className="inline-flex items-center space-x-2 px-6 py-3 rounded-full mb-8 backdrop-blur-sm border border-white/30"
+              style={{ background: `${seasonalColors.primary}20` }}
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.5, duration: 0.6 }}
+            >
+              <ShoppingCart className="w-4 h-4 text-white" />
+              <span className="font-semibold text-white capitalize">
+                {currentSeason} Store
+              </span>
+            </motion.div>
+
+            <motion.h1
+              className="text-5xl md:text-6xl font-bold text-white mb-6 drop-shadow-lg"
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, delay: 0.7 }}
+            >
               Result Road Store
-            </h1>
-            <p className="text-xl text-white/90 max-w-3xl mx-auto leading-relaxed drop-shadow-md">
-              Shop Result Road branded merchandise and adaptive fitness
-              equipment. Every purchase supports our community programs and
-              participants.
-            </p>
-          </div>
+            </motion.h1>
+
+            <motion.p
+              className="text-xl text-white/90 max-w-3xl mx-auto leading-relaxed drop-shadow-md"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.9 }}
+            >
+              {seasonalContent.heroSubtitle}
+            </motion.p>
+          </motion.div>
         </div>
       </section>
 
       {/* Store Features */}
-      <section className="py-20 bg-white dark:bg-slate-800">
+      <section
+        ref={featuresRef}
+        className="py-20"
+        style={{ backgroundColor: seasonalColors.cardBackground }}
+      >
         <div className="max-w-6xl mx-auto px-6">
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
             {storeFeatures.map((feature, index) => (
-              <div
+              <motion.div
                 key={index}
-                className="text-center p-6 rounded-2xl bg-slate-50 dark:bg-slate-900 hover:shadow-lg transition-all duration-300"
+                className="text-center p-6 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 relative overflow-hidden group"
+                style={{ backgroundColor: seasonalColors.background }}
+                initial={{ opacity: 0, y: 50 }}
+                animate={
+                  isFeaturesInView
+                    ? { opacity: 1, y: 0 }
+                    : { opacity: 0, y: 50 }
+                }
+                transition={{ delay: index * 0.1, duration: 0.6 }}
+                whileHover={{ scale: 1.05, y: -10 }}
               >
-                <div
-                  className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4"
+                {/* Background animation */}
+                <motion.div
+                  className="absolute inset-0 opacity-0 group-hover:opacity-5 transition-opacity duration-300"
+                  style={{
+                    background: `radial-gradient(circle, ${seasonalColors.primary}, transparent 70%)`,
+                  }}
+                />
+
+                <motion.div
+                  className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4 relative z-10"
                   style={{ backgroundColor: `${seasonalColors.primary}20` }}
+                  whileHover={{ rotate: 360, scale: 1.1 }}
+                  transition={{ duration: 0.6 }}
                 >
                   <feature.icon
                     className="w-8 h-8"
                     style={{ color: seasonalColors.primary }}
                   />
-                </div>
-                <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-2">
+                </motion.div>
+
+                <h3
+                  className="text-lg font-bold mb-2 relative z-10"
+                  style={{ color: seasonalColors.textPrimary }}
+                >
                   {feature.title}
                 </h3>
-                <p className="text-slate-600 dark:text-slate-300 text-sm">
+
+                <p
+                  className="text-sm relative z-10"
+                  style={{ color: seasonalColors.textSecondary }}
+                >
                   {feature.description}
                 </p>
-              </div>
+              </motion.div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* Categories */}
-      <section className="py-20 bg-slate-50 dark:bg-slate-900">
-        <div className="max-w-6xl mx-auto px-6">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-slate-900 dark:text-white mb-6">
-              Shop by Category
-            </h2>
-            <p className="text-xl text-slate-600 dark:text-slate-300 max-w-3xl mx-auto">
-              Browse our carefully curated selection of products across
-              different categories.
-            </p>
-          </div>
-
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
-            {categories.map((category, index) => (
-              <div
-                key={index}
-                className="bg-white dark:bg-slate-800 rounded-2xl p-8 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 cursor-pointer"
+      {/* Store Loading Message */}
+      <section
+        ref={messageRef}
+        className="py-32"
+        style={{ backgroundColor: seasonalColors.background }}
+      >
+        <div className="max-w-4xl mx-auto px-6 text-center">
+          <motion.div
+            initial={{ opacity: 0, y: 50 }}
+            animate={
+              isMessageInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 50 }
+            }
+            transition={{ duration: 0.8 }}
+          >
+            {/* Animated Icon */}
+            <motion.div
+              className="w-24 h-24 rounded-3xl mx-auto mb-8 flex items-center justify-center relative overflow-hidden"
+              style={{
+                background: `linear-gradient(135deg, ${seasonalColors.primary}, ${seasonalColors.secondary})`,
+              }}
+              animate={{
+                scale: [1, 1.1, 1],
+                rotate: [0, 10, -10, 0],
+              }}
+              transition={{
+                duration: 4,
+                repeat: Infinity,
+                ease: "easeInOut",
+              }}
+            >
+              <motion.div
+                animate={{ rotate: [0, 360] }}
+                transition={{
+                  duration: 3,
+                  repeat: Infinity,
+                  ease: "linear",
+                }}
               >
-                <div
-                  className="w-16 h-16 rounded-2xl flex items-center justify-center mb-6"
-                  style={{ backgroundColor: `${seasonalColors.primary}20` }}
-                >
-                  <category.icon
-                    className="w-8 h-8"
-                    style={{ color: seasonalColors.primary }}
-                  />
-                </div>
-                <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-4">
-                  {category.title}
-                </h3>
-                <p className="text-slate-600 dark:text-slate-300 mb-4">
-                  {category.description}
-                </p>
-                <span
-                  className="text-sm font-semibold"
+                <Package className="w-12 h-12 text-white" />
+              </motion.div>
+
+              {/* Sparkle effects */}
+              <motion.div
+                className="absolute top-2 right-2"
+                animate={{
+                  scale: [0.8, 1.2, 0.8],
+                  opacity: [0.5, 1, 0.5],
+                }}
+                transition={{
+                  duration: 2,
+                  repeat: Infinity,
+                  ease: "easeInOut",
+                }}
+              >
+                <Sparkles className="w-4 h-4 text-white" />
+              </motion.div>
+            </motion.div>
+
+            {/* Main Message */}
+            <motion.h2
+              className="text-4xl md:text-5xl font-bold mb-6"
+              style={{ color: seasonalColors.textPrimary }}
+              initial={{ opacity: 0, y: 20 }}
+              animate={
+                isMessageInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }
+              }
+              transition={{ delay: 0.3, duration: 0.6 }}
+            >
+              <span className="font-black">
+                STORE IS LOADING UP - STAY TUNED
+              </span>
+            </motion.h2>
+
+            <motion.p
+              className="text-xl mb-8 max-w-2xl mx-auto leading-relaxed"
+              style={{ color: seasonalColors.textSecondary }}
+              initial={{ opacity: 0, y: 20 }}
+              animate={
+                isMessageInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }
+              }
+              transition={{ delay: 0.5, duration: 0.6 }}
+            >
+              We're working hard to bring you amazing Result Road merchandise
+              and adaptive fitness equipment. Sign up below to be the first to
+              know when our store goes live!
+            </motion.p>
+
+            {/* Loading Animation */}
+            <motion.div
+              className="flex items-center justify-center space-x-2 mb-8"
+              initial={{ opacity: 0 }}
+              animate={isMessageInView ? { opacity: 1 } : { opacity: 0 }}
+              transition={{ delay: 0.7, duration: 0.6 }}
+            >
+              {[0, 1, 2].map((i) => (
+                <motion.div
+                  key={i}
+                  className="w-3 h-3 rounded-full"
+                  style={{ backgroundColor: seasonalColors.primary }}
+                  animate={{
+                    scale: [1, 1.5, 1],
+                    opacity: [0.3, 1, 0.3],
+                  }}
+                  transition={{
+                    duration: 1.5,
+                    repeat: Infinity,
+                    ease: "easeInOut",
+                    delay: i * 0.2,
+                  }}
+                />
+              ))}
+            </motion.div>
+
+            {/* Notification Bell */}
+            <motion.div
+              className="inline-flex items-center space-x-3 px-6 py-3 rounded-full backdrop-blur-sm"
+              style={{
+                backgroundColor: `${seasonalColors.primary}15`,
+                border: `2px solid ${seasonalColors.primary}30`,
+              }}
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={
+                isMessageInView
+                  ? { opacity: 1, scale: 1 }
+                  : { opacity: 0, scale: 0.8 }
+              }
+              transition={{ delay: 0.9, duration: 0.6 }}
+              whileHover={{ scale: 1.05 }}
+            >
+              <motion.div
+                animate={{ rotate: [-10, 10, -10] }}
+                transition={{
+                  duration: 2,
+                  repeat: Infinity,
+                  ease: "easeInOut",
+                }}
+              >
+                <Bell
+                  className="w-5 h-5"
                   style={{ color: seasonalColors.primary }}
-                >
-                  {category.itemCount}
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Featured Products */}
-      <section className="py-20 bg-white dark:bg-slate-800">
-        <div className="max-w-6xl mx-auto px-6">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-slate-900 dark:text-white mb-6">
-              Featured Products
-            </h2>
-            <p className="text-xl text-slate-600 dark:text-slate-300 max-w-3xl mx-auto">
-              Discover our most popular items and latest additions to the Result
-              Road store.
-            </p>
-          </div>
-
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {featuredProducts.map((product, index) => (
-              <div
-                key={index}
-                className={`bg-slate-50 dark:bg-slate-900 rounded-2xl overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02] ${
-                  product.featured ? "ring-2 ring-opacity-50" : ""
-                }`}
-                style={
-                  product.featured
-                    ? { boxShadow: `0 0 0 2px ${seasonalColors.primary}40` }
-                    : {}
-                }
+                />
+              </motion.div>
+              <span
+                className="font-semibold"
+                style={{ color: seasonalColors.primary }}
               >
-                {product.sale && (
-                  <div
-                    className="px-4 py-2 text-white text-sm font-semibold"
-                    style={{ backgroundColor: "#ef4444" }}
-                  >
-                    ON SALE
-                  </div>
-                )}
-
-                <div className="relative h-48">
-                  <Image
-                    src={product.image}
-                    alt={product.name}
-                    fill
-                    className="object-cover"
-                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                  />
-                  <div className="absolute top-4 right-4">
-                    <button className="w-10 h-10 rounded-full bg-white/90 flex items-center justify-center shadow-md hover:bg-white transition-colors">
-                      <Heart className="w-5 h-5 text-slate-600" />
-                    </button>
-                  </div>
-                </div>
-
-                <div className="p-6">
-                  <div className="flex items-center justify-between mb-2">
-                    <span
-                      className="text-sm font-medium px-2 py-1 rounded"
-                      style={{
-                        backgroundColor: `${seasonalColors.primary}20`,
-                        color: seasonalColors.primary,
-                      }}
-                    >
-                      {product.category}
-                    </span>
-                    <div className="flex items-center space-x-1">
-                      <Star className="w-4 h-4 fill-current text-yellow-400" />
-                      <span className="text-sm text-slate-600 dark:text-slate-300">
-                        {product.rating} ({product.reviews})
-                      </span>
-                    </div>
-                  </div>
-
-                  <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2">
-                    {product.name}
-                  </h3>
-
-                  <p className="text-slate-600 dark:text-slate-300 text-sm mb-4 line-clamp-2">
-                    {product.description}
-                  </p>
-
-                  <div className="space-y-2 mb-4">
-                    {product.features
-                      .slice(0, 2)
-                      .map((feature, featureIndex) => (
-                        <div
-                          key={featureIndex}
-                          className="flex items-center space-x-2"
-                        >
-                          <div
-                            className="w-1.5 h-1.5 rounded-full"
-                            style={{ backgroundColor: seasonalColors.primary }}
-                          />
-                          <span className="text-slate-600 dark:text-slate-300 text-sm">
-                            {feature}
-                          </span>
-                        </div>
-                      ))}
-                  </div>
-
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center space-x-2">
-                      <span
-                        className="text-2xl font-bold"
-                        style={{ color: seasonalColors.primary }}
-                      >
-                        {product.price}
-                      </span>
-                      {product.originalPrice && (
-                        <span className="text-slate-500 line-through text-lg">
-                          {product.originalPrice}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-
-                  <button
-                    className="w-full text-white font-semibold py-3 rounded-xl transition-all duration-200 shadow-md hover:shadow-lg flex items-center justify-center space-x-2"
-                    style={{ backgroundColor: seasonalColors.primary }}
-                  >
-                    <ShoppingCart className="w-4 h-4" />
-                    <span>Add to Cart</span>
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
+                Get notified when we launch!
+              </span>
+            </motion.div>
+          </motion.div>
         </div>
       </section>
 
       {/* Newsletter Signup */}
-      <section className="py-20 bg-slate-50 dark:bg-slate-900">
+      <section
+        ref={newsletterRef}
+        className="py-20"
+        style={{ backgroundColor: seasonalColors.cardBackground }}
+      >
         <div className="max-w-6xl mx-auto px-6">
-          <div className="bg-white dark:bg-slate-800 rounded-3xl p-12 text-center shadow-xl">
-            <h2 className="text-3xl font-bold text-slate-900 dark:text-white mb-6">
-              Stay Updated on New Products
-            </h2>
-            <p className="text-lg text-slate-600 dark:text-slate-300 mb-8 max-w-2xl mx-auto">
-              Be the first to know about new merchandise, exclusive discounts,
-              and special edition items.
-            </p>
+          <motion.div
+            className="rounded-3xl p-12 text-center shadow-xl relative overflow-hidden"
+            style={{ backgroundColor: seasonalColors.background }}
+            initial={{ opacity: 0, y: 50 }}
+            animate={
+              isNewsletterInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 50 }
+            }
+            transition={{ duration: 0.8 }}
+          >
+            {/* Background decoration */}
+            <motion.div
+              className="absolute top-0 right-0 w-40 h-40 rounded-full opacity-10"
+              style={{ backgroundColor: seasonalColors.accent }}
+              animate={{
+                scale: [1, 1.2, 1],
+                rotate: [0, 180, 360],
+              }}
+              transition={{
+                duration: 15,
+                repeat: Infinity,
+                ease: "linear",
+              }}
+            />
 
-            <div className="max-w-md mx-auto flex gap-4">
+            <motion.h2
+              className="text-3xl font-bold mb-6 relative z-10"
+              style={{ color: seasonalColors.textPrimary }}
+              initial={{ opacity: 0, y: 20 }}
+              animate={
+                isNewsletterInView
+                  ? { opacity: 1, y: 0 }
+                  : { opacity: 0, y: 20 }
+              }
+              transition={{ delay: 0.2, duration: 0.6 }}
+            >
+              Be First to Shop Our Store
+            </motion.h2>
+
+            <motion.p
+              className="text-lg mb-8 max-w-2xl mx-auto relative z-10"
+              style={{ color: seasonalColors.textSecondary }}
+              initial={{ opacity: 0, y: 20 }}
+              animate={
+                isNewsletterInView
+                  ? { opacity: 1, y: 0 }
+                  : { opacity: 0, y: 20 }
+              }
+              transition={{ delay: 0.4, duration: 0.6 }}
+            >
+              Be the first to know about our store launch, exclusive discounts,
+              and special edition items coming soon.
+            </motion.p>
+
+            <motion.div
+              className="max-w-md mx-auto flex gap-4 relative z-10"
+              initial={{ opacity: 0, y: 20 }}
+              animate={
+                isNewsletterInView
+                  ? { opacity: 1, y: 0 }
+                  : { opacity: 0, y: 20 }
+              }
+              transition={{ delay: 0.6, duration: 0.6 }}
+            >
               <input
                 type="email"
                 placeholder="Enter your email"
-                className="flex-1 px-4 py-3 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white placeholder-slate-500 dark:placeholder-slate-400 focus:outline-none focus:ring-2 focus:border-transparent"
+                className="flex-1 px-4 py-3 rounded-lg border border-gray-200 dark:border-gray-600 focus:outline-none focus:ring-2 focus:border-transparent transition-all duration-300"
                 style={
                   {
+                    backgroundColor: seasonalColors.cardBackground,
+                    color: seasonalColors.textPrimary,
                     "--tw-ring-color": seasonalColors.primary,
                   } as React.CSSProperties
                 }
               />
-              <button
-                className="px-6 py-3 text-white font-semibold rounded-lg transition-all duration-200 hover:scale-105"
+              <motion.button
+                className="px-6 py-3 text-white font-semibold rounded-lg transition-all duration-300 shadow-lg hover:shadow-xl"
                 style={{ backgroundColor: seasonalColors.primary }}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
               >
-                Subscribe
-              </button>
-            </div>
-          </div>
+                Notify Me
+              </motion.button>
+            </motion.div>
+          </motion.div>
         </div>
       </section>
 
       {/* CTA Section */}
       <section
-        className="py-20 relative"
+        ref={ctaRef}
+        className="py-20 relative overflow-hidden"
         style={{
-          background: `linear-gradient(135deg, ${seasonalColors.primary}, ${seasonalColors.primaryHover})`,
+          background: `linear-gradient(135deg, ${seasonalColors.primary}, ${seasonalColors.secondary})`,
         }}
       >
-        <div className="max-w-6xl mx-auto px-6 text-center">
-          <h2 className="text-4xl font-bold text-white mb-6">
-            Support Our Community
-          </h2>
-          <p className="text-xl text-white/90 mb-8 max-w-2xl mx-auto">
-            Every purchase helps fund Result Road programs and supports our
-            amazing community of participants.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <button className="bg-white text-slate-900 font-semibold px-8 py-4 rounded-xl hover:bg-slate-50 transition-all duration-300 inline-flex items-center justify-center space-x-2 shadow-lg hover:shadow-xl hover:scale-105">
-              <ShoppingCart className="w-5 h-5" />
-              <span>Shop Now</span>
-            </button>
-            <Link
-              href="/about"
-              className="border-2 border-white text-white font-semibold px-8 py-4 rounded-xl hover:bg-white hover:text-slate-900 hover:scale-105 transition-all duration-300 inline-flex items-center justify-center space-x-2 backdrop-blur-sm"
+        {/* Background decorations */}
+        <motion.div
+          className="absolute top-10 right-10 w-40 h-40 rounded-full opacity-10"
+          style={{ backgroundColor: "white" }}
+          animate={{
+            scale: [1, 1.3, 1],
+            rotate: [0, 360, 0],
+          }}
+          transition={{
+            duration: 20,
+            repeat: Infinity,
+            ease: "linear",
+          }}
+        />
+
+        <div className="max-w-6xl mx-auto px-6 text-center relative z-10">
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={isCtaInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 30 }}
+            transition={{ duration: 0.8 }}
+          >
+            <motion.div
+              className="w-20 h-20 rounded-3xl mx-auto mb-8 flex items-center justify-center bg-white/20 backdrop-blur-sm"
+              animate={{
+                scale: [1, 1.1, 1],
+                rotate: [0, 10, -10, 0],
+              }}
+              transition={{
+                duration: 4,
+                repeat: Infinity,
+                ease: "easeInOut",
+              }}
             >
-              <span>Learn More</span>
-            </Link>
-          </div>
+              <Heart className="w-10 h-10 text-white" />
+            </motion.div>
+
+            <h2 className="text-4xl font-bold text-white mb-6">
+              Support Our Community
+            </h2>
+
+            <p className="text-xl text-white/90 mb-8 max-w-2xl mx-auto">
+              When our store launches, every purchase will help fund Result Road
+              programs and support our amazing community of participants.
+            </p>
+
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <motion.div
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                <button
+                  className="bg-white font-semibold px-8 py-4 rounded-xl transition-all duration-300 inline-flex items-center justify-center space-x-2 shadow-lg hover:shadow-2xl group"
+                  style={{ color: seasonalColors.primary }}
+                >
+                  <Clock className="w-5 h-5" />
+                  <span>Coming Soon</span>
+                </button>
+              </motion.div>
+
+              <motion.div
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                <Link
+                  href="/about"
+                  className="border-2 border-white text-white font-semibold px-8 py-4 rounded-xl transition-all duration-300 inline-flex items-center justify-center space-x-2 backdrop-blur-sm hover:bg-white group"
+                  style={{ borderColor: "white" }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.color = seasonalColors.primary;
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.color = "white";
+                  }}
+                >
+                  <span>Learn More</span>
+                  <ArrowRight className="w-5 h-5" />
+                </Link>
+              </motion.div>
+            </div>
+          </motion.div>
         </div>
       </section>
 
