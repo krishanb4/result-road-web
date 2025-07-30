@@ -48,15 +48,15 @@ const quickStats = [
 ];
 
 const ctaOptions = [
-  {
-    icon: Calendar,
-    title: "Book Free Consultation",
-    description:
-      "Meet with our team to discuss your goals and find the perfect program",
-    action: "Schedule Now",
-    href: "/contact",
-    primary: true,
-  },
+  // {
+  //   icon: Calendar,
+  //   title: "Book Free Consultation",
+  //   description:
+  //     "Meet with our team to discuss your goals and find the perfect program",
+  //   action: "Schedule Now",
+  //   href: "/contact",
+  //   primary: true,
+  // },
   {
     icon: User,
     title: "Join Our Community",
@@ -65,15 +65,15 @@ const ctaOptions = [
     href: "/register",
     primary: false,
   },
-  {
-    icon: Phone,
-    title: "Call Us Direct",
-    description:
-      "Speak with our team immediately about programs and availability",
-    action: "0456 194 251",
-    href: "tel:0456194251",
-    primary: false,
-  },
+  // {
+  //   icon: Phone,
+  //   title: "Call Us Direct",
+  //   description:
+  //     "Speak with our team immediately about programs and availability",
+  //   action: "0456 194 251",
+  //   href: "tel:0456194251",
+  //   primary: false,
+  // },
 ];
 
 // const benefits = [
@@ -115,7 +115,7 @@ export function CTASection() {
       description:
         "Spring is the season of new beginnings. Let Result Road help you plant the seeds for a healthier, more confident you.",
       urgency: "Spring programs filling fast!",
-      specialOffer: "Join this month and get your first week free",
+      specialOffer: "",
       backgroundEmoji: "🌸🌱🦋",
       theme: "renewal and growth",
     },
@@ -162,7 +162,7 @@ export function CTASection() {
       {/* Background Pattern */}
       <div className="absolute inset-0 overflow-hidden">
         {/* Animated background elements */}
-        {[...Array(15)].map((_, i) => (
+        {/* {[...Array(15)].map((_, i) => (
           <motion.div
             key={i}
             className="absolute text-6xl opacity-5"
@@ -185,7 +185,7 @@ export function CTASection() {
           >
             {content.backgroundEmoji[Math.floor(Math.random() * 3)]}
           </motion.div>
-        ))}
+        ))} */}
 
         {/* Geometric shapes */}
         <motion.div
