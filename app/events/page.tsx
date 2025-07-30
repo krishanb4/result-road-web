@@ -435,8 +435,8 @@ export default function EventsPage() {
 
                 <div className="p-8 md:p-10">
                   {/* Event Details */}
-                  <div className="grid md:grid-cols-2 gap-6 mb-8">
-                    <div className="space-y-4">
+                  <div className="grid lg:grid-cols-3 gap-6 mb-8">
+                    <div className="lg:col-span-2 space-y-4">
                       <motion.div
                         className="flex items-center space-x-3"
                         initial={{ opacity: 0, x: -20 }}
@@ -517,12 +517,11 @@ export default function EventsPage() {
                       </motion.div>
                     </div>
 
-                    {/* Ticket Information */}
+                    {/* Ticket Information - Now just the large image */}
                     <motion.div
-                      className="p-4 rounded-2xl border-2 border-dashed relative overflow-hidden"
+                      className="rounded-2xl relative overflow-hidden"
                       style={{
-                        borderColor: seasonalColors.accent,
-                        backgroundColor: `${seasonalColors.accent}10`,
+                        backgroundColor: `${seasonalColors.accent}05`,
                       }}
                       initial={{ opacity: 0, scale: 0.9 }}
                       animate={
@@ -540,7 +539,7 @@ export default function EventsPage() {
                           repeat: Infinity,
                           ease: "linear",
                         }}
-                        className="absolute top-2 right-2"
+                        className="absolute top-3 right-3"
                       >
                         <Ticket
                           className="w-6 h-6"
@@ -548,30 +547,17 @@ export default function EventsPage() {
                         />
                       </motion.div>
 
-                      {/* Ticket Poster Image */}
-                      <div className="mb-3 rounded-lg overflow-hidden">
+                      {/* Much Larger Event Poster Image */}
+                      <div className="rounded-lg overflow-hidden">
                         <Image
                           src="/images/event.jpg"
                           alt="Spring Season Celebration Poster"
-                          width={160}
-                          height={200}
-                          className="w-full max-w-[160px] mx-auto object-cover rounded-lg"
+                          width={500}
+                          height={600}
+                          className="w-full max-w-[500px] mx-auto object-cover rounded-lg shadow-xl"
                           style={{ aspectRatio: "1280/1600" }}
                         />
                       </div>
-
-                      <h4
-                        className="font-bold mb-2 text-lg"
-                        style={{ color: seasonalColors.accent }}
-                      >
-                        Get Your Tickets!
-                      </h4>
-                      <p
-                        className="text-sm font-medium"
-                        style={{ color: seasonalColors.textPrimary }}
-                      >
-                        {event.special}
-                      </p>
                     </motion.div>
                   </div>
 

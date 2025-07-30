@@ -291,7 +291,7 @@ export default function ServicesPage() {
             {services.map((service, index) => (
               <motion.div
                 key={index}
-                className="rounded-3xl overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300 relative group"
+                className="rounded-3xl overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300 relative group flex flex-col h-full"
                 style={{ backgroundColor: seasonalColors.background }}
                 initial={{ opacity: 0, y: 50 }}
                 animate={
@@ -302,7 +302,7 @@ export default function ServicesPage() {
                 transition={{ delay: index * 0.1, duration: 0.6 }}
                 whileHover={{ scale: 1.02, y: -5 }}
               >
-                <div className="relative h-48">
+                <div className="relative h-48 flex-shrink-0">
                   <Image
                     src={service.image}
                     alt={service.title}
@@ -327,7 +327,7 @@ export default function ServicesPage() {
                   </div>
                 </div>
 
-                <div className="p-8">
+                <div className="p-8 flex flex-col flex-grow">
                   <div className="flex justify-between items-start mb-4">
                     <h3
                       className="text-2xl font-bold"
@@ -359,7 +359,7 @@ export default function ServicesPage() {
                     {service.description}
                   </p>
 
-                  <div className="space-y-3 mb-8">
+                  <div className="space-y-3 mb-8 flex-grow">
                     {service.features.map((feature, featureIndex) => (
                       <motion.div
                         key={featureIndex}
@@ -389,6 +389,7 @@ export default function ServicesPage() {
                   <motion.div
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
+                    className="mt-auto"
                   >
                     <Link
                       href="/contact"

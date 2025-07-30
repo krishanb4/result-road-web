@@ -1,6 +1,7 @@
 "use client";
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Menu,
@@ -57,6 +58,7 @@ export function Navigation() {
   const [showSeasonSelector, setShowSeasonSelector] = useState(false);
   const { currentTheme, currentSeason, setTheme } = useSeasonalTheme();
   const colors = useSeasonalColors();
+  const pathname = usePathname();
 
   // Handle scroll effect
   useEffect(() => {
@@ -70,10 +72,17 @@ export function Navigation() {
   // Close mobile menu when route changes
   useEffect(() => {
     setIsMobileMenuOpen(false);
-  }, []);
+  }, [pathname]);
 
   const CurrentSeasonIcon = seasonIcons[currentSeason];
   const currentLogo = logoImages[currentSeason];
+
+  // Check if a navigation item is active
+  const isActive = (href: string) => {
+    if (href === "/" && pathname === "/") return true;
+    if (href !== "/" && pathname.startsWith(href)) return true;
+    return false;
+  };
 
   return (
     <>
@@ -124,6 +133,7 @@ export function Navigation() {
               <div className="hidden lg:flex items-center space-x-0.5">
                 {navigationItems.map((item, index) => {
                   const Icon = item.icon;
+                  const active = isActive(item.href);
                   return (
                     <motion.div
                       key={item.name}
@@ -133,16 +143,37 @@ export function Navigation() {
                     >
                       <Link
                         href={item.href}
-                        className="flex items-center space-x-1.5 px-3 py-2 rounded-xl font-medium text-gray-700 hover:text-gray-900 transition-all duration-200 relative group text-sm"
+                        className={`flex items-center space-x-1.5 px-3 py-2 rounded-xl font-medium transition-all duration-200 relative group text-sm ${
+                          active
+                            ? "text-white shadow-md"
+                            : "text-gray-700 hover:text-gray-900"
+                        }`}
                       >
-                        <Icon className="w-4 h-4" />
-                        <span>{item.name}</span>
-                        <motion.div
-                          className="absolute inset-0 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-200"
-                          style={{
-                            background: `linear-gradient(135deg, ${colors.primary}10, ${colors.secondary}10)`,
-                          }}
-                        />
+                        <Icon className="w-4 h-4 relative z-10" />
+                        <span className="relative z-10">{item.name}</span>
+                        {!active && (
+                          <motion.div
+                            className="absolute inset-0 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+                            style={{
+                              background: `linear-gradient(135deg, ${colors.primary}10, ${colors.secondary}10)`,
+                            }}
+                          />
+                        )}
+                        {active && (
+                          <motion.div
+                            layoutId="activeNavItem"
+                            className="absolute inset-0 rounded-xl z-0"
+                            style={{
+                              background: `linear-gradient(135deg, ${colors.primary}, ${colors.secondary})`,
+                            }}
+                            initial={false}
+                            transition={{
+                              type: "spring",
+                              stiffness: 300,
+                              damping: 30,
+                            }}
+                          />
+                        )}
                       </Link>
                     </motion.div>
                   );
@@ -333,6 +364,7 @@ export function Navigation() {
                   <nav className="px-6 space-y-2">
                     {navigationItems.map((item, index) => {
                       const Icon = item.icon;
+                      const active = isActive(item.href);
                       return (
                         <motion.div
                           key={item.name}
@@ -342,19 +374,42 @@ export function Navigation() {
                         >
                           <Link
                             href={item.href}
-                            className="flex items-center space-x-4 px-4 py-3 rounded-xl font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50 transition-all duration-200"
+                            className={`flex items-center space-x-4 px-4 py-3 rounded-xl font-medium transition-all duration-200 relative ${
+                              active
+                                ? "text-white shadow-lg"
+                                : "text-gray-700 hover:text-gray-900 hover:bg-gray-50"
+                            }`}
                             onClick={() => setIsMobileMenuOpen(false)}
                           >
                             <div
-                              className="w-10 h-10 rounded-lg flex items-center justify-center"
-                              style={{ backgroundColor: `${colors.primary}15` }}
+                              className={`w-10 h-10 rounded-lg flex items-center justify-center relative z-10 ${
+                                active ? "bg-white/20" : ""
+                              }`}
+                              style={{
+                                backgroundColor: active
+                                  ? "rgba(255, 255, 255, 0.2)"
+                                  : `${colors.primary}15`,
+                              }}
                             >
                               <Icon
                                 className="w-5 h-5"
-                                style={{ color: colors.primary }}
+                                style={{
+                                  color: active ? "white" : colors.primary,
+                                }}
                               />
                             </div>
-                            <span>{item.name}</span>
+                            <span className="relative z-10">{item.name}</span>
+                            {active && (
+                              <motion.div
+                                className="absolute inset-0 rounded-xl z-0"
+                                style={{
+                                  background: `linear-gradient(135deg, ${colors.primary}, ${colors.secondary})`,
+                                }}
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                transition={{ duration: 0.2 }}
+                              />
+                            )}
                           </Link>
                         </motion.div>
                       );
