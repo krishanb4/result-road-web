@@ -22,31 +22,32 @@ import {
   Sparkles,
   Image as ImageIcon,
   PartyPopper,
+  Ticket,
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 
 const upcomingEvents = [
   {
-    title: "Result Road Spring Celebration",
+    title: "Result Road Spring Season Celebration",
     date: "Friday 7th November",
-    time: "TBA",
+    time: "6PM",
     location: "Dudley Footy Ground",
     participants: "Community Welcome",
     description:
-      "Join us for our special Spring Celebration event! A day of community, fitness demonstrations, activities, and celebration of our Result Road family. More details coming soon.",
+      "Come and celebrate the wins, growth, and journey of the Result Road Spring Season with an unforgettable evening. Join us as we celebrate our community's achievements and progress together.",
     highlights: [
-      "Community activities",
-      "Fitness demonstrations",
+      "Celebrating spring season wins",
+      "Recognition of growth and achievements",
+      "Community gathering",
+      "Unforgettable evening experience",
       "Food and refreshments",
-      "Special presentations",
-      "Family-friendly fun",
-      "Achievement celebrations",
+      "Awards and presentations",
     ],
-    image: "/1.jpg",
+    image: "/11.jpg",
     featured: true,
     category: "Celebration",
-    special: "Poster coming tomorrow morning!",
+    special: "Tickets available at www.resultroad.com.au",
   },
 ];
 
@@ -427,7 +428,7 @@ export default function EventsPage() {
                       }
                       transition={{ delay: 1, duration: 0.6 }}
                     >
-                      {event.date}
+                      {event.date} at {event.time}
                     </motion.p>
                   </div>
                 </div>
@@ -516,7 +517,7 @@ export default function EventsPage() {
                       </motion.div>
                     </div>
 
-                    {/* Special Notice */}
+                    {/* Ticket Information */}
                     <motion.div
                       className="p-4 rounded-2xl border-2 border-dashed relative overflow-hidden"
                       style={{
@@ -541,17 +542,29 @@ export default function EventsPage() {
                         }}
                         className="absolute top-2 right-2"
                       >
-                        <ImageIcon
+                        <Ticket
                           className="w-6 h-6"
                           style={{ color: seasonalColors.accent }}
                         />
                       </motion.div>
 
+                      {/* Ticket Poster Image */}
+                      <div className="mb-3 rounded-lg overflow-hidden">
+                        <Image
+                          src="/images/event.jpg"
+                          alt="Spring Season Celebration Poster"
+                          width={160}
+                          height={200}
+                          className="w-full max-w-[160px] mx-auto object-cover rounded-lg"
+                          style={{ aspectRatio: "1280/1600" }}
+                        />
+                      </div>
+
                       <h4
                         className="font-bold mb-2 text-lg"
                         style={{ color: seasonalColors.accent }}
                       >
-                        Coming Soon!
+                        Get Your Tickets!
                       </h4>
                       <p
                         className="text-sm font-medium"
@@ -621,38 +634,66 @@ export default function EventsPage() {
                     </div>
                   </motion.div>
 
-                  {/* CTA Button */}
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={
-                      isEventsInView
-                        ? { opacity: 1, y: 0 }
-                        : { opacity: 0, y: 20 }
-                    }
-                    transition={{ delay: 2.2, duration: 0.6 }}
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                  >
-                    <Link
-                      href="/contact"
-                      className="w-full font-bold py-4 rounded-2xl transition-all duration-300 shadow-lg hover:shadow-2xl inline-flex items-center justify-center space-x-3 text-white text-lg group"
-                      style={{
-                        background: `linear-gradient(135deg, ${seasonalColors.primary}, ${seasonalColors.secondary})`,
-                      }}
+                  {/* CTA Buttons */}
+                  <div className="grid md:grid-cols-2 gap-4">
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={
+                        isEventsInView
+                          ? { opacity: 1, y: 0 }
+                          : { opacity: 0, y: 20 }
+                      }
+                      transition={{ delay: 2.2, duration: 0.6 }}
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
                     >
-                      <span>Register Interest</span>
-                      <motion.div
-                        animate={{ x: [0, 4, 0] }}
-                        transition={{
-                          duration: 1.5,
-                          repeat: Infinity,
-                          ease: "easeInOut",
+                      <a
+                        href="/contact"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="w-full font-bold py-4 rounded-2xl transition-all duration-300 shadow-lg hover:shadow-2xl inline-flex items-center justify-center space-x-3 text-white text-lg group"
+                        style={{
+                          background: `linear-gradient(135deg, ${seasonalColors.primary}, ${seasonalColors.secondary})`,
                         }}
                       >
-                        <ArrowRight className="w-5 h-5" />
-                      </motion.div>
-                    </Link>
-                  </motion.div>
+                        <Ticket className="w-5 h-5" />
+                        <span>Get Tickets</span>
+                        <motion.div
+                          animate={{ x: [0, 4, 0] }}
+                          transition={{
+                            duration: 1.5,
+                            repeat: Infinity,
+                            ease: "easeInOut",
+                          }}
+                        >
+                          <ArrowRight className="w-5 h-5" />
+                        </motion.div>
+                      </a>
+                    </motion.div>
+
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={
+                        isEventsInView
+                          ? { opacity: 1, y: 0 }
+                          : { opacity: 0, y: 20 }
+                      }
+                      transition={{ delay: 2.4, duration: 0.6 }}
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                    >
+                      <Link
+                        href="/contact"
+                        className="w-full font-semibold py-4 rounded-2xl transition-all duration-300 shadow-md hover:shadow-lg inline-flex items-center justify-center space-x-2 border-2 text-lg"
+                        style={{
+                          borderColor: seasonalColors.primary,
+                          color: seasonalColors.primary,
+                        }}
+                      >
+                        <span>Learn More</span>
+                      </Link>
+                    </motion.div>
+                  </div>
                 </div>
               </motion.div>
             ))}

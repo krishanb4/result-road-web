@@ -58,19 +58,19 @@ const programLevels = [
   {
     level: "Entry Level",
     description:
-      "Ideal for beginners or those returning to fitness, focusing on building foundational skills, improving basic fitness and gaining confidence.",
+      "Ideal for the beginner that is at the most basic level. The focus is just to start at a very basic start point and build strength and coordination one step at a time.",
     color: "#10b981",
   },
   {
     level: "Moderate Level",
     description:
-      "Designed for those with some experience, introducing more challenging workouts and techniques while building on the basics.",
+      "A step up from Entry Level. This level takes off gradually where Entry Level left off. A great achievement from anyone on the rise up.",
     color: "#f59e0b",
   },
   {
     level: "Advanced Level",
     description:
-      "Tailored for those ready for intensive and complex workouts, pushing participants to refine skills and achieve peak fitness.",
+      "Tailored for those capable of challenging themselves beyond Moderate Level. This is for those that have strengthened their ability to push to the top level.",
     color: "#ef4444",
   },
 ];

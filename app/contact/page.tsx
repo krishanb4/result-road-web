@@ -581,7 +581,7 @@ export default function ContactPage() {
               transition={{ duration: 0.8, delay: 0.2 }}
             >
               {/* Office Hours */}
-              <motion.div
+              {/* <motion.div
                 className="rounded-3xl p-8 shadow-lg relative overflow-hidden"
                 style={{ backgroundColor: seasonalColors.cardBackground }}
                 whileHover={{ scale: 1.02 }}
@@ -637,7 +637,7 @@ export default function ContactPage() {
                     </motion.div>
                   ))}
                 </div>
-              </motion.div>
+              </motion.div> */}
 
               {/* Inquiry Types */}
               <motion.div

@@ -78,17 +78,6 @@ export const SEASONAL_THEMES = {
 
 // Dark mode variations (optional for future use)
 export const SEASONAL_THEMES_DARK = {
-  summer: {
-    ...SEASONAL_THEMES.summer,
-    background:
-      "linear-gradient(135deg, #0f172a 0%, #1e293b 25%, #334155 75%, #475569 100%)",
-    cardBackground: "#1e293b",
-    cardBackgroundHover: "#334155",
-    navBackground: "rgba(15, 23, 42, 0.85)",
-    textPrimary: "#f1f5f9",
-    textSecondary: "#cbd5e1",
-    textMuted: "#94a3b8",
-  },
   spring: {
     ...SEASONAL_THEMES.spring,
     background:
@@ -100,6 +89,18 @@ export const SEASONAL_THEMES_DARK = {
     textSecondary: "#cbd5e1",
     textMuted: "#94a3b8",
   },
+  summer: {
+    ...SEASONAL_THEMES.summer,
+    background:
+      "linear-gradient(135deg, #0f172a 0%, #1e293b 25%, #334155 75%, #475569 100%)",
+    cardBackground: "#1e293b",
+    cardBackgroundHover: "#334155",
+    navBackground: "rgba(15, 23, 42, 0.85)",
+    textPrimary: "#f1f5f9",
+    textSecondary: "#cbd5e1",
+    textMuted: "#94a3b8",
+  },
+
   autumn: {
     ...SEASONAL_THEMES.autumn,
     background:
@@ -145,7 +146,7 @@ const SeasonalThemeContext = createContext<
 function detectSeasonFromDate(): SeasonType {
   const month = new Date().getMonth(); // 0-11
 
-  if (month >= 2 && month <= 4) return "spring"; // March, April, May
+  if (month >= 2 && month <= 7) return "spring"; // March, April, May
   if (month >= 5 && month <= 7) return "summer"; // June, July, August
   if (month >= 8 && month <= 10) return "autumn"; // September, October, November
   return "winter"; // December, January, February

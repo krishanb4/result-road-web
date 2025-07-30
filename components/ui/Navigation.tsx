@@ -28,7 +28,6 @@ import {
 import { ThemeToggle } from "./ThemeToggle";
 
 const navigationItems = [
-  { name: "Home", href: "/", icon: Home },
   { name: "About", href: "/about", icon: Info },
   { name: "Services", href: "/services", icon: Heart }, // Added Services
   { name: "Programs", href: "/programs", icon: Settings },
@@ -153,7 +152,7 @@ export function Navigation() {
               {/* Right Side Actions */}
               <div className="flex items-center space-x-2">
                 {/* Season Selector */}
-                <div className="relative">
+                {/* <div className="relative">
                   <motion.button
                     onClick={() => setShowSeasonSelector(!showSeasonSelector)}
                     className="p-2 rounded-xl bg-white/50 backdrop-blur-sm border border-white/20 hover:bg-white/70 transition-all duration-200"
@@ -222,10 +221,10 @@ export function Navigation() {
                       </motion.div>
                     )}
                   </AnimatePresence>
-                </div>
+                </div> */}
 
                 {/* Theme Toggle */}
-                <ThemeToggle />
+                {/* <ThemeToggle /> */}
 
                 {/* Auth Buttons - Desktop */}
                 <div className="hidden lg:flex items-center space-x-1">
@@ -392,12 +391,12 @@ export function Navigation() {
       </AnimatePresence>
 
       {/* Click outside to close season selector */}
-      {showSeasonSelector && (
+      {/* {showSeasonSelector && (
         <div
           className="fixed inset-0 z-30"
           onClick={() => setShowSeasonSelector(false)}
         />
-      )}
+      )} */}
     </>
   );
 }
