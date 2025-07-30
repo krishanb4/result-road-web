@@ -11,10 +11,25 @@ import {
   useSeasonalColors,
 } from "../components/ui/ModernHomePage";
 
+function getSeasonalTheme() {
+  const theme = localStorage.getItem("seasonal-theme");
+
+  if (!theme || theme !== "default") {
+    localStorage.setItem("seasonal-theme", "default");
+    return "default";
+  }
+
+  return theme;
+}
+
 // Loading component with seasonal theming
 function SeasonalLoader() {
   const colors = useSeasonalColors();
-
+  // You can invoke this function during component initialization or useEffect:
+  useEffect(() => {
+    const theme = getSeasonalTheme();
+    console.log("Current seasonal theme:", theme);
+  }, []);
   return (
     <motion.div
       initial={{ opacity: 0 }}

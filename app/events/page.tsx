@@ -7,8 +7,8 @@ import {
   useSeasonalTheme,
   useSeasonalColors,
 } from "../../components/ui/SeasonalThemeContext";
-import { motion, useInView } from "framer-motion";
-import { useRef } from "react";
+import { motion, useInView, AnimatePresence } from "framer-motion";
+import { useRef, useState } from "react";
 import {
   Calendar,
   Clock,
@@ -23,6 +23,8 @@ import {
   Image as ImageIcon,
   PartyPopper,
   Ticket,
+  X,
+  ZoomIn,
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -119,6 +121,9 @@ export default function EventsPage() {
   const typesRef = useRef<HTMLElement>(null);
   const eventsRef = useRef<HTMLElement>(null);
   const ctaRef = useRef<HTMLElement>(null);
+
+  // State for image modal
+  const [isImageModalOpen, setIsImageModalOpen] = useState(false);
 
   const isTypesInView = useInView(typesRef, { once: true, margin: "-100px" });
   const isEventsInView = useInView(eventsRef, { once: true, margin: "-100px" });
@@ -517,7 +522,7 @@ export default function EventsPage() {
                       </motion.div>
                     </div>
 
-                    {/* Ticket Information - Now just the large image */}
+                    {/* Clickable Event Poster */}
                     <motion.div
                       className="rounded-2xl relative overflow-hidden"
                       style={{
@@ -539,7 +544,7 @@ export default function EventsPage() {
                           repeat: Infinity,
                           ease: "linear",
                         }}
-                        className="absolute top-3 right-3"
+                        className="absolute top-3 right-3 z-10"
                       >
                         <Ticket
                           className="w-6 h-6"
@@ -547,16 +552,25 @@ export default function EventsPage() {
                         />
                       </motion.div>
 
-                      {/* Much Larger Event Poster Image */}
-                      <div className="rounded-lg overflow-hidden">
+                      {/* Clickable Event Poster Image */}
+                      <div
+                        className="rounded-lg overflow-hidden cursor-pointer relative group/image"
+                        onClick={() => setIsImageModalOpen(true)}
+                      >
                         <Image
                           src="/images/event.jpg"
                           alt="Spring Season Celebration Poster"
                           width={500}
                           height={600}
-                          className="w-full max-w-[500px] mx-auto object-cover rounded-lg shadow-xl"
+                          className="w-full max-w-[500px] mx-auto object-cover rounded-lg shadow-xl transition-transform duration-300 group-hover/image:scale-105"
                           style={{ aspectRatio: "1280/1600" }}
                         />
+                        {/* Zoom overlay on hover */}
+                        <div className="absolute inset-0 bg-black/20 opacity-0 group-hover/image:opacity-100 transition-opacity duration-300 flex items-center justify-center rounded-lg">
+                          <div className="bg-white/90 backdrop-blur-sm rounded-full p-3">
+                            <ZoomIn className="w-6 h-6 text-gray-800" />
+                          </div>
+                        </div>
                       </div>
                     </motion.div>
                   </div>
@@ -788,6 +802,75 @@ export default function EventsPage() {
       </section>
 
       <Footer />
+
+      {/* Image Modal */}
+      <AnimatePresence>
+        {isImageModalOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4"
+            onClick={() => setIsImageModalOpen(false)}
+          >
+            {/* Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 bg-black/80 backdrop-blur-sm"
+            />
+
+            {/* Modal Content */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.8, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.8, y: 20 }}
+              transition={{ type: "spring", damping: 25, stiffness: 300 }}
+              className="relative max-w-4xl max-h-[90vh] w-full"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Close Button */}
+              <motion.button
+                onClick={() => setIsImageModalOpen(false)}
+                className="absolute -top-12 right-0 z-10 p-2 rounded-full bg-white/20 backdrop-blur-sm border border-white/30 text-white hover:bg-white/30 transition-all duration-200"
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.9 }}
+              >
+                <X className="w-6 h-6" />
+              </motion.button>
+
+              {/* Large Image */}
+              <div className="rounded-2xl overflow-hidden shadow-2xl">
+                <Image
+                  src="/images/event.jpg"
+                  alt="Spring Season Celebration Poster - Full Size"
+                  width={1280}
+                  height={1600}
+                  className="w-full h-auto object-contain max-h-[85vh]"
+                  style={{ aspectRatio: "1280/1600" }}
+                  priority
+                />
+              </div>
+
+              {/* Image Info */}
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2 }}
+                className="absolute bottom-4 left-4 right-4 bg-black/60 backdrop-blur-md rounded-xl p-4 text-white"
+              >
+                <h3 className="font-bold text-lg mb-1">
+                  Result Road Spring Season Celebration
+                </h3>
+                <p className="text-white/80 text-sm">
+                  Friday 7th November at 6PM • Dudley Footy Ground
+                </p>
+              </motion.div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
