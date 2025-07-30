@@ -698,7 +698,7 @@ export default function ContactPage() {
               </motion.div>
 
               {/* Emergency Contact */}
-              <motion.div
+              {/* <motion.div
                 className="rounded-3xl p-8 text-white shadow-lg relative overflow-hidden"
                 style={{
                   background: `linear-gradient(135deg, ${seasonalColors.primary}, ${seasonalColors.secondary})`,
@@ -731,7 +731,7 @@ export default function ContactPage() {
                   <Phone className="w-5 h-5" />
                   <span className="text-lg font-semibold">0456 194 251</span>
                 </div>
-              </motion.div>
+              </motion.div> */}
             </motion.div>
           </div>
         </div>
