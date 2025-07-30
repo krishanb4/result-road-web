@@ -90,7 +90,7 @@ const soloPrograms = [
       "Increased confidence",
     ],
     image: "/1.jpg",
-    featured: true,
+    featured: false,
   },
   {
     title: "Strength and Stability",
@@ -170,7 +170,7 @@ const soloPrograms = [
       "Better balance",
     ],
     image: "/1.jpg",
-    featured: true,
+    featured: false,
   },
   {
     title: "Bodyweight Beast",
@@ -237,7 +237,7 @@ const teamPrograms = [
       "Team camaraderie",
     ],
     image: "/2.jpg",
-    featured: true,
+    featured: false,
   },
   {
     title: "Kick Blast",
@@ -285,7 +285,7 @@ const teamPrograms = [
       "Personal growth",
     ],
     image: "/2.jpg",
-    featured: true,
+    featured: false,
   },
   {
     title: "Fun and Fit",
@@ -692,7 +692,7 @@ export default function ProgramsPage() {
             {soloPrograms.map((program, index) => (
               <motion.div
                 key={index}
-                className="rounded-3xl overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300 relative group"
+                className="rounded-3xl overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300 relative group flex flex-col h-full"
                 style={{ backgroundColor: seasonalColors.background }}
                 initial={{ opacity: 0, y: 50 }}
                 animate={
@@ -703,7 +703,7 @@ export default function ProgramsPage() {
               >
                 {program.featured && (
                   <motion.div
-                    className="px-6 py-2 text-white text-sm font-semibold flex items-center justify-center space-x-2"
+                    className="px-6 py-2 text-white text-sm font-semibold flex items-center justify-center space-x-2 flex-shrink-0"
                     style={{ backgroundColor: seasonalColors.primary }}
                     initial={{ opacity: 0, y: -20 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -714,7 +714,7 @@ export default function ProgramsPage() {
                   </motion.div>
                 )}
 
-                <div className="relative h-48">
+                <div className="relative h-48 flex-shrink-0">
                   <Image
                     src={program.image}
                     alt={program.title}
@@ -744,7 +744,7 @@ export default function ProgramsPage() {
                   </div>
                 </div>
 
-                <div className="p-8">
+                <div className="p-8 flex flex-col flex-grow">
                   <h3
                     className="text-2xl font-bold mb-4"
                     style={{ color: seasonalColors.textPrimary }}
@@ -771,7 +771,7 @@ export default function ProgramsPage() {
                     {program.description}
                   </p>
 
-                  <div className="space-y-6">
+                  <div className="space-y-6 flex-grow">
                     <div>
                       <h4
                         className="font-semibold mb-3"
@@ -812,7 +812,7 @@ export default function ProgramsPage() {
                   </div>
 
                   <div
-                    className="mt-8 pt-6"
+                    className="mt-8 pt-6 flex-shrink-0"
                     style={{
                       borderTop: `1px solid ${seasonalColors.textMuted}30`,
                     }}
@@ -881,7 +881,7 @@ export default function ProgramsPage() {
             {teamPrograms.map((program, index) => (
               <motion.div
                 key={index}
-                className="rounded-3xl overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300 relative group"
+                className="rounded-3xl overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300 relative group flex flex-col h-full"
                 style={{ backgroundColor: seasonalColors.cardBackground }}
                 initial={{ opacity: 0, y: 50 }}
                 animate={
@@ -892,7 +892,7 @@ export default function ProgramsPage() {
               >
                 {program.featured && (
                   <motion.div
-                    className="px-6 py-2 text-white text-sm font-semibold flex items-center justify-center space-x-2"
+                    className="px-6 py-2 text-white text-sm font-semibold flex items-center justify-center space-x-2 flex-shrink-0"
                     style={{ backgroundColor: seasonalColors.primary }}
                     initial={{ opacity: 0, y: -20 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -903,7 +903,7 @@ export default function ProgramsPage() {
                   </motion.div>
                 )}
 
-                <div className="relative h-48">
+                <div className="relative h-48 flex-shrink-0">
                   <Image
                     src={program.image}
                     alt={program.title}
@@ -933,7 +933,7 @@ export default function ProgramsPage() {
                   </div>
                 </div>
 
-                <div className="p-8">
+                <div className="p-8 flex flex-col flex-grow">
                   <h3
                     className="text-2xl font-bold mb-4"
                     style={{ color: seasonalColors.textPrimary }}
@@ -960,7 +960,7 @@ export default function ProgramsPage() {
                     {program.description}
                   </p>
 
-                  <div className="space-y-6">
+                  <div className="space-y-6 flex-grow">
                     <div>
                       <h4
                         className="font-semibold mb-3"
@@ -1001,7 +1001,7 @@ export default function ProgramsPage() {
                   </div>
 
                   <div
-                    className="mt-8 pt-6"
+                    className="mt-8 pt-6 flex-shrink-0"
                     style={{
                       borderTop: `1px solid ${seasonalColors.textMuted}30`,
                     }}

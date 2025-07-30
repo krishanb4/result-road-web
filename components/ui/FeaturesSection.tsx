@@ -303,7 +303,8 @@ function FeatureCard({
           </motion.div>
 
           {/* Learn more link */}
-          <motion.div
+          <motion.a
+            href="/services"
             className="flex items-center space-x-2 text-sm font-medium cursor-pointer group/link"
             style={{ color: colors.primary }}
             whileHover={{ x: 4 }}
@@ -319,7 +320,7 @@ function FeatureCard({
             >
               <ArrowUpRight className="w-4 h-4" />
             </motion.div>
-          </motion.div>
+          </motion.a>
         </div>
 
         {/* Hover gradient overlay */}

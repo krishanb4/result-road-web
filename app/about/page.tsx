@@ -8,7 +8,7 @@ import {
   useSeasonalColors,
 } from "../../components/ui/SeasonalThemeContext";
 import { motion, useInView } from "framer-motion";
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import {
   CheckCircle,
   Award,
@@ -18,6 +18,8 @@ import {
   Activity,
   ArrowRight,
   Sparkles,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
 import Image from "next/image";
 
@@ -26,19 +28,28 @@ const getSeasonalTeamMembers = (season: string) => {
     {
       name: "Nathan",
       role: "",
-      bio: "Nathan is a seasoned professional with extensive experience in both the professional sports world and community programs. With a passion for helping individuals overcome challenges, Nathan has dedicated his career to developing successful programs that support individuals with behavioral and developmental disabilities as well as people in the community that have seeked Nathan’s help to address all kinds of goals from physical, to health and especially training goals. His work with Result Road reflects his commitment to inclusivity, empowerment and creating opportunities for everyone to thrive. Through his leadership, Result Road has become a beacon of positive change, transforming lives and fostering a sense of community.",
+      shortBio:
+        "Nathan is a seasoned professional with extensive experience in both the professional sports world and community programs. With a passion for helping individuals overcome challenges, Nathan has dedicated his career to developing successful programs.",
+      fullBio:
+        "Nathan is a seasoned professional with extensive experience in both the professional sports world and community programs. With a passion for helping individuals overcome challenges, Nathan has dedicated his career to developing successful programs that support individuals with behavioral and developmental disabilities as well as people in the community that have seeked Nathan's help to address all kinds of goals from physical, to health and especially training goals. His work with Result Road reflects his commitment to inclusivity, empowerment and creating opportunities for everyone to thrive. Through his leadership, Result Road has become a beacon of positive change, transforming lives and fostering a sense of community.",
       image: "/team/nathan.jpg",
     },
     {
       name: "Liz",
       role: "",
-      bio: "Liz is a dedicated and highly skilled behavior therapist with a passion for helping individuals achieve their fullest potential. With years of experience in behavior therapy, Liz brings a wealth of knowledge and compassion to Result Road. Her expertise lies in creating personalized, evidence based strategies that empower individuals to overcome challenges and thrive in their daily lives.At Result Road Liz plays a pivotal role in shaping our programs to ensure they are inclusive, supportive and effective for participants of all abilities. Her commitment to fostering a positive and encouraging environment aligns perfectly with Result Road’s mission to create a community where everyone can succeed. Whether she’s working one on one with clients or developing new program initiatives Liz’s dedication to her work is evident in every aspect of her practice.Join us at Result Road and experience the difference that compassionate, expert care can make, guided by professionals like Liz who are committed to making a positive impact.",
+      shortBio:
+        "Liz is a dedicated and highly skilled behavior therapist with a passion for helping individuals achieve their fullest potential. With years of experience in behavior therapy, Liz brings a wealth of knowledge and compassion to Result Road.",
+      fullBio:
+        "Liz is a dedicated and highly skilled behavior therapist with a passion for helping individuals achieve their fullest potential. With years of experience in behavior therapy, Liz brings a wealth of knowledge and compassion to Result Road. Her expertise lies in creating personalized, evidence based strategies that empower individuals to overcome challenges and thrive in their daily lives.At Result Road Liz plays a pivotal role in shaping our programs to ensure they are inclusive, supportive and effective for participants of all abilities. Her commitment to fostering a positive and encouraging environment aligns perfectly with Result Road's mission to create a community where everyone can succeed. Whether she's working one on one with clients or developing new program initiatives Liz's dedication to her work is evident in every aspect of her practice.Join us at Result Road and experience the difference that compassionate, expert care can make, guided by professionals like Liz who are committed to making a positive impact.",
       image: "/team/liz.jpg",
     },
     {
       name: "Sean",
       role: "",
-      bio: "With extensive experience as a Coordinator of Supports for some of the industry’s leading companies, Sean brings a wealth of knowledge and a strong reputation to Result Road in his role. Known for his dedication and expertise, Sean has built a career on creating impactful, person centered support solutions. At Result Road Sean steps into the role of Business Development Manager, where he will leverage his industry insights and connections to help guide the organization towards growth and success. Sean is passionate about making a difference and is committed to ensuring that Result Road continues to be a leader in providing exceptional support services.",
+      shortBio:
+        "With extensive experience as a Coordinator of Supports for some of the industry's leading companies, Sean brings a wealth of knowledge and a strong reputation to Result Road in his role as Business Development Manager.",
+      fullBio:
+        "With extensive experience as a Coordinator of Supports for some of the industry's leading companies, Sean brings a wealth of knowledge and a strong reputation to Result Road in his role. Known for his dedication and expertise, Sean has built a career on creating impactful, person centered support solutions. At Result Road Sean steps into the role of Business Development Manager, where he will leverage his industry insights and connections to help guide the organization towards growth and success. Sean is passionate about making a difference and is committed to ensuring that Result Road continues to be a leader in providing exceptional support services.",
       image: "/team/sean.jpg",
     },
   ];
@@ -224,6 +235,18 @@ export default function AboutPage() {
   const valuesRef = useRef<HTMLElement>(null);
   const teamRef = useRef<HTMLElement>(null);
 
+  // State for managing expanded bios
+  const [expandedBios, setExpandedBios] = useState<{ [key: number]: boolean }>(
+    {}
+  );
+
+  const toggleBio = (index: number) => {
+    setExpandedBios((prev) => ({
+      ...prev,
+      [index]: !prev[index],
+    }));
+  };
+
   const isMissionInView = useInView(missionRef, {
     once: true,
     margin: "-100px",
@@ -340,7 +363,8 @@ export default function AboutPage() {
               transition={{ delay: 1.1, duration: 0.6 }}
               className="mt-8"
             >
-              <motion.button
+              <motion.a
+                href="/services"
                 whileHover={{ scale: 1.05, y: -2 }}
                 whileTap={{ scale: 0.95 }}
                 className="group inline-flex items-center space-x-3 px-8 py-4 text-lg font-semibold text-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 relative overflow-hidden"
@@ -360,7 +384,7 @@ export default function AboutPage() {
                 >
                   <ArrowRight className="w-5 h-5" />
                 </motion.div>
-              </motion.button>
+              </motion.a>
             </motion.div>
           </motion.div>
         </div>
@@ -609,7 +633,7 @@ export default function AboutPage() {
             {seasonalTeamMembers.map((member, index) => (
               <motion.div
                 key={index}
-                className="rounded-2xl p-8 text-center shadow-lg hover:shadow-xl transition-all duration-300 relative overflow-hidden group"
+                className="rounded-2xl p-8 text-center shadow-lg hover:shadow-xl transition-all duration-300 relative overflow-hidden group flex flex-col h-full"
                 style={{ backgroundColor: seasonalColors.background }}
                 initial={{ opacity: 0, y: 50 }}
                 animate={
@@ -652,25 +676,49 @@ export default function AboutPage() {
                 </h3>
 
                 <p
-                  className="font-semibold mb-2 relative z-10"
+                  className="font-semibold mb-4 relative z-10"
                   style={{ color: seasonalColors.primary }}
                 >
                   {member.seasonalRole}
                 </p>
 
-                {/* <p
-                  className="text-sm mb-4 opacity-80 relative z-10"
-                  style={{ color: seasonalColors.secondary }}
-                >
-                  Specializing in {member.seasonalFocus}
-                </p> */}
+                {/* Bio content with flex-grow to push button to bottom */}
+                <div className="flex-grow flex flex-col justify-between relative z-10">
+                  <motion.p
+                    className="leading-relaxed mb-6"
+                    style={{ color: seasonalColors.textSecondary }}
+                    initial={false}
+                    animate={{ opacity: 1 }}
+                  >
+                    {expandedBios[index] ? member.fullBio : member.shortBio}
+                  </motion.p>
 
-                <p
-                  className="leading-relaxed relative z-10"
-                  style={{ color: seasonalColors.textSecondary }}
-                >
-                  {member.bio}
-                </p>
+                  {/* Button positioned consistently at bottom */}
+                  <motion.button
+                    onClick={() => toggleBio(index)}
+                    className="inline-flex items-center justify-center space-x-2 px-4 py-2 rounded-lg font-medium transition-all duration-300 hover:shadow-md self-center"
+                    style={{
+                      backgroundColor: `${seasonalColors.primary}20`,
+                      color: seasonalColors.primary,
+                    }}
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                  >
+                    <span>
+                      {expandedBios[index] ? "Show Less" : "Load More"}
+                    </span>
+                    <motion.div
+                      animate={{ rotate: expandedBios[index] ? 180 : 0 }}
+                      transition={{ duration: 0.3 }}
+                    >
+                      {expandedBios[index] ? (
+                        <ChevronUp className="w-4 h-4" />
+                      ) : (
+                        <ChevronDown className="w-4 h-4" />
+                      )}
+                    </motion.div>
+                  </motion.button>
+                </div>
               </motion.div>
             ))}
           </div>

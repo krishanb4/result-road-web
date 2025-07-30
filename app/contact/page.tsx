@@ -321,7 +321,7 @@ export default function ContactPage() {
                 </h3>
 
                 <p
-                  className="text-lg font-semibold mb-3 relative z-10"
+                  className="text-md font-semibold mb-3 relative z-10 text-center"
                   style={{ color: seasonalColors.primary }}
                 >
                   {method.value}
