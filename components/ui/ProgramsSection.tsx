@@ -460,10 +460,11 @@ export function ProgramsSection() {
           transition={{ delay: 1.2, duration: 0.8 }}
           className="text-center mt-20"
         >
-          <motion.button
+          <motion.a
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             className="inline-flex items-center space-x-3 px-8 py-4 text-lg font-semibold text-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 relative overflow-hidden group"
+            href="/programs"
             style={{
               background: `linear-gradient(135deg, ${colors.primary}, ${colors.secondary})`,
             }}
@@ -488,7 +489,7 @@ export function ProgramsSection() {
               whileHover={{ x: "100%" }}
               transition={{ duration: 0.6, ease: "easeInOut" }}
             />
-          </motion.button>
+          </motion.a>
         </motion.div>
       </div>
     </section>

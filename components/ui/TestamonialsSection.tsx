@@ -651,10 +651,11 @@ export function TestimonialsSection() {
           <p className="text-xl text-gray-600 dark:text-gray-300 mb-8">
             Ready to write your own success story?
           </p>
-          <motion.button
+          <motion.a
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             className="inline-flex items-center space-x-3 px-8 py-4 text-lg font-semibold text-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 relative overflow-hidden group"
+            href="/register"
             style={{
               background: `linear-gradient(135deg, ${colors.primary}, ${colors.secondary})`,
             }}
@@ -679,7 +680,7 @@ export function TestimonialsSection() {
               whileHover={{ x: "100%" }}
               transition={{ duration: 0.6, ease: "easeInOut" }}
             />
-          </motion.button>
+          </motion.a>
         </motion.div>
       </div>
     </section>

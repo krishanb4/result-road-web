@@ -202,7 +202,7 @@ export function Footer() {
                     href="mailto:nath@boxcamp.page"
                     className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
                   >
-                    nath@boxcamp.page
+                    hello@resultroad.com.au
                   </a>
                 </div>
                 <div className="flex items-start space-x-3">
@@ -211,7 +211,7 @@ export function Footer() {
                     style={{ color: colors.primary }}
                   />
                   <span className="text-gray-600 dark:text-gray-400">
-                    Newcastle, Lake Macquarie & Nelson Bay
+                    Newcastle, Lake Macquarie , Nelson Bay & Hunter Region
                   </span>
                 </div>
               </motion.div>

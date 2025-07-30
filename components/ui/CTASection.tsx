@@ -54,7 +54,7 @@ const ctaOptions = [
     description:
       "Meet with our team to discuss your goals and find the perfect program",
     action: "Schedule Now",
-    href: "/consultation",
+    href: "/contact",
     primary: true,
   },
   {
@@ -76,14 +76,14 @@ const ctaOptions = [
   },
 ];
 
-const benefits = [
-  "No long-term contracts required",
-  "Free initial consultation",
-  "Flexible scheduling options",
-  "Adaptive equipment provided",
-  "Qualified, experienced coaches",
-  "Supportive community environment",
-];
+// const benefits = [
+//   // "No long-term contracts required",
+//   // "Free initial consultation",
+//   // "Flexible scheduling options",
+//   // "Adaptive equipment provided",
+//   // "Qualified, experienced coaches",
+//   // "Supportive community environment",
+// ];
 
 export function CTASection() {
   const { currentSeason, currentTheme } = useSeasonalTheme();
@@ -555,7 +555,7 @@ export function CTASection() {
         </motion.div>
 
         {/* Benefits List */}
-        <motion.div
+        {/* <motion.div
           initial={{ opacity: 0, y: 40 }}
           animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 40 }}
           transition={{ delay: 2.8, duration: 0.8 }}
@@ -565,7 +565,7 @@ export function CTASection() {
             What You Get When You Join
           </h3>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {benefits.map((benefit, index) => (
               <motion.div
                 key={benefit}
@@ -599,8 +599,8 @@ export function CTASection() {
                 </span>
               </motion.div>
             ))}
-          </div>
-        </motion.div>
+          </div> 
+        </motion.div> */}
 
         {/* Final Contact Info */}
         <motion.div
@@ -629,7 +629,7 @@ export function CTASection() {
               whileHover={{ scale: 1.05 }}
             >
               <Mail className="w-5 h-5" />
-              <span>nath@boxcamp.page</span>
+              <span>hello@resultroad.com.au</span>
             </motion.a>
           </div>
         </motion.div>

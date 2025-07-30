@@ -28,24 +28,24 @@ const contactInfo = [
   {
     icon: Mail,
     label: "Email",
-    value: "nath@boxcamp.page",
+    value: "hello@resultroad.com.au",
     description: "We typically respond within 24 hours",
-    href: "mailto:nath@boxcamp.page",
+    href: "mailto:hello@resultroad.com.au",
   },
   {
     icon: MapPin,
     label: "Locations",
-    value: "Newcastle, Lake Macquarie & Nelson Bay",
+    value: "Newcastle, Lake Macquarie , Nelson Bay & Hunter Region",
     description: "Multiple convenient locations to serve you",
     href: "#",
   },
-  {
-    icon: Clock,
-    label: "Office Hours",
-    value: "Mon - Fri: 9AM - 5PM",
-    description: "Weekend programs available",
-    href: "#",
-  },
+  // {
+  //   icon: Clock,
+  //   label: "Office Hours",
+  //   value: "Mon - Fri: 9AM - 5PM",
+  //   description: "Weekend programs available",
+  //   href: "#",
+  // },
 ];
 
 const formFields = [

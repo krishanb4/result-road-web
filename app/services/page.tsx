@@ -49,7 +49,7 @@ const services = [
       "Qualified instructors",
       "Various ability levels",
     ],
-    duration: "45 minutes",
+    duration: "60 minutes",
     image: "/4.jpg",
   },
   {
