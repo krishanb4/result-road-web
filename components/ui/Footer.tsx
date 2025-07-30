@@ -359,8 +359,8 @@ export function Footer() {
               >
                 <span>© 2024 Result Road. All rights reserved.</span>
                 <div className="flex items-center space-x-2">
-                  <span>Built with</span>
-                  <motion.div
+                  <span>Designed and developed by </span>
+                  {/* <motion.div
                     animate={{
                       scale: [1, 1.2, 1],
                     }}
@@ -370,12 +370,17 @@ export function Footer() {
                       ease: "easeInOut",
                     }}
                   >
-                    <Heart
+                    {/* <Heart
                       className="w-4 h-4 fill-current"
                       style={{ color: colors.accent }}
-                    />
-                  </motion.div>
-                  <span>for our community</span>
+                    /> 
+                  </motion.div> */}
+                  <Link
+                    href="https://www.upwork.com/freelancers/layanrusiru"
+                    className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-all duration-200 relative group inline-block"
+                  >
+                    <span>Layan R.</span>
+                  </Link>
                 </div>
               </motion.div>
 
