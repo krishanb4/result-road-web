@@ -24,7 +24,7 @@ const seasonalContent = {
   spring: {
     headline: "Bloom Into Your Best Self",
     subheadline: "Spring Season Registration Open",
-    description: "10 Week Camp - 1st September to 8 November 2025",
+    description: "10 Week Camp - 1st to 7th November 2025",
     ctaPrimary: "Start Your Journey",
     ctaSecondary: "Watch Our Story",
     videoUrl: "/videos/2.mp4", // Add your spring video path
