@@ -1,4 +1,5 @@
 "use client";
+
 import { useState } from "react";
 import {
   Upload,
@@ -10,6 +11,11 @@ import {
   CheckCircle2,
   AlertCircle,
   Loader2,
+  Mail,
+  Lock,
+  Eye,
+  EyeOff,
+  UserCheck,
 } from "lucide-react";
 
 // Import your Firebase instances
@@ -17,21 +23,58 @@ import { auth, db } from "@/lib/firebase";
 import { Navigation } from "@/components/ui/Navigation";
 import { Footer } from "@/components/ui/Footer";
 import { useSeasonalColors } from "@/contexts/ThemeContext";
-import {
-  createUserWithEmailAndPassword,
-  signInWithEmailAndPassword,
-} from "firebase/auth";
+import { useAuth, UserRole } from "@/contexts/AuthContext";
 import { doc, setDoc, serverTimestamp } from "firebase/firestore";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
 
 // Initialize storage
 const storage = getStorage();
 
+const roles: {
+  value: UserRole;
+  label: string;
+  description: string;
+  icon: string;
+}[] = [
+  {
+    value: "participant",
+    label: "Participant",
+    description: "Join fitness programs and track your progress",
+    icon: "🏃‍♂️",
+  },
+  {
+    value: "instructor",
+    label: "Instructor",
+    description: "Lead sessions and support participants",
+    icon: "👨‍🏫",
+  },
+  {
+    value: "support_worker",
+    label: "Support Worker",
+    description: "Provide guidance and assistance to participants",
+    icon: "🤝",
+  },
+  {
+    value: "service_provider",
+    label: "Service Provider",
+    description: "Manage care plans and staff coordination",
+    icon: "🏢",
+  },
+  {
+    value: "fitness_partner",
+    label: "Fitness Partner",
+    description: "Provide facilities and resources",
+    icon: "🏋️‍♀️",
+  },
+];
+
 interface FormData {
   // Auth fields
   emailAddress: string;
   password: string;
   confirmPassword: string;
+  displayName: string;
+  role: UserRole;
 
   // Client Details
   firstName: string;
@@ -82,6 +125,7 @@ interface FormData {
 
 export default function RegisterPage() {
   const seasonalColors = useSeasonalColors();
+  const { signUp, signIn } = useAuth();
   const [currentStep, setCurrentStep] = useState(0);
   const [errors, setErrors] = useState<Record<string, boolean | string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -89,11 +133,15 @@ export default function RegisterPage() {
   const [authMode, setAuthMode] = useState<"signup" | "signin">("signup");
   const [successMessage, setSuccessMessage] = useState("");
   const [currentUser, setCurrentUser] = useState<any>(null);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const [formData, setFormData] = useState<FormData>({
     emailAddress: "",
     password: "",
     confirmPassword: "",
+    displayName: "",
+    role: "participant",
     firstName: "",
     lastName: "",
     dateOfBirth: "",
@@ -154,6 +202,11 @@ export default function RegisterPage() {
     const newErrors: Record<string, boolean | string> = {};
     let isValid = true;
 
+    if (!formData.displayName.trim()) {
+      newErrors.displayName = "Full name is required";
+      isValid = false;
+    }
+
     if (!formData.emailAddress.trim()) {
       newErrors.emailAddress = "Email is required";
       isValid = false;
@@ -189,50 +242,22 @@ export default function RegisterPage() {
 
     setIsSubmitting(true);
     try {
-      let userCredential;
-
       if (authMode === "signup") {
-        userCredential = await createUserWithEmailAndPassword(
-          auth,
+        await signUp(
           formData.emailAddress,
-          formData.password
+          formData.password,
+          formData.role,
+          formData.displayName
         );
       } else {
-        userCredential = await signInWithEmailAndPassword(
-          auth,
-          formData.emailAddress,
-          formData.password
-        );
+        await signIn(formData.emailAddress, formData.password);
       }
 
-      setCurrentUser(userCredential.user);
       setIsAuthenticated(true);
       setCurrentStep(1);
     } catch (error: any) {
       console.error("Authentication error:", error);
-      let errorMessage = "Authentication failed";
-
-      switch (error.code) {
-        case "auth/email-already-in-use":
-          errorMessage = "An account with this email already exists";
-          break;
-        case "auth/weak-password":
-          errorMessage = "Password is too weak";
-          break;
-        case "auth/user-not-found":
-          errorMessage = "No account found with this email";
-          break;
-        case "auth/wrong-password":
-          errorMessage = "Incorrect password";
-          break;
-        case "auth/invalid-email":
-          errorMessage = "Invalid email address";
-          break;
-        default:
-          errorMessage = error.message;
-      }
-
-      setErrors({ auth: errorMessage });
+      setErrors({ auth: error.message || "Authentication failed" });
     } finally {
       setIsSubmitting(false);
     }
@@ -660,67 +685,279 @@ export default function RegisterPage() {
                 </div>
 
                 <div className="space-y-4">
+                  {authMode === "signup" && (
+                    <div>
+                      <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
+                        Full Name <span className="text-red-500">*</span>
+                      </label>
+                      <div className="relative group">
+                        <User className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400 transition-colors" />
+                        <input
+                          type="text"
+                          value={formData.displayName}
+                          onChange={(e) =>
+                            handleInputChange("displayName", e.target.value)
+                          }
+                          className={`w-full pl-12 pr-4 py-4 bg-white dark:bg-slate-800 border rounded-xl text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:border-transparent transition-all duration-200 ${
+                            errors.displayName
+                              ? "border-red-500 focus:ring-red-500"
+                              : "border-slate-200 dark:border-slate-600"
+                          }`}
+                          style={
+                            !errors.displayName
+                              ? ({
+                                  "--tw-ring-color": seasonalColors.primary,
+                                } as React.CSSProperties)
+                              : undefined
+                          }
+                          placeholder="Enter your full name"
+                          required
+                        />
+                      </div>
+                      {renderError("displayName")}
+                    </div>
+                  )}
+
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                    <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
                       Email Address <span className="text-red-500">*</span>
                     </label>
-                    <input
-                      type="email"
-                      value={formData.emailAddress}
-                      onChange={(e) =>
-                        handleInputChange("emailAddress", e.target.value)
-                      }
-                      className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:border-transparent bg-white dark:bg-slate-700 text-slate-900 dark:text-white transition-colors ${
-                        errors.emailAddress
-                          ? "border-red-500 focus:ring-red-500"
-                          : "border-slate-300 dark:border-slate-600 focus:ring-blue-500"
-                      }`}
-                    />
+                    <div className="relative group">
+                      <Mail className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400 transition-colors" />
+                      <input
+                        type="email"
+                        value={formData.emailAddress}
+                        onChange={(e) =>
+                          handleInputChange("emailAddress", e.target.value)
+                        }
+                        className={`w-full pl-12 pr-4 py-4 bg-white dark:bg-slate-800 border rounded-xl text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:border-transparent transition-all duration-200 ${
+                          errors.emailAddress
+                            ? "border-red-500 focus:ring-red-500"
+                            : "border-slate-200 dark:border-slate-600"
+                        }`}
+                        style={
+                          !errors.emailAddress
+                            ? ({
+                                "--tw-ring-color": seasonalColors.primary,
+                              } as React.CSSProperties)
+                            : undefined
+                        }
+                        placeholder="Enter your email"
+                        required
+                      />
+                    </div>
                     {renderError("emailAddress")}
                   </div>
 
+                  {authMode === "signup" && (
+                    <div>
+                      <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
+                        I am a...
+                      </label>
+                      <div className="relative group">
+                        <UserCheck className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400 transition-colors z-10" />
+                        <select
+                          value={formData.role}
+                          onChange={(e) =>
+                            handleInputChange(
+                              "role",
+                              e.target.value as UserRole
+                            )
+                          }
+                          className="w-full pl-12 pr-4 py-4 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-xl text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:border-transparent appearance-none transition-all duration-200"
+                          style={
+                            {
+                              "--tw-ring-color": seasonalColors.primary,
+                            } as React.CSSProperties
+                          }
+                        >
+                          {roles.map((role) => (
+                            <option
+                              key={role.value}
+                              value={role.value}
+                              className="bg-white dark:bg-slate-800 text-slate-900 dark:text-white"
+                            >
+                              {role.icon} {role.label}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <p
+                        className="mt-2 text-sm p-3 rounded-lg border"
+                        style={{
+                          backgroundColor: `${seasonalColors.primary}10`,
+                          borderColor: `${seasonalColors.primary}30`,
+                          color: seasonalColors.primary,
+                        }}
+                      >
+                        <span className="font-medium">
+                          {
+                            roles.find((r) => r.value === formData.role)
+                              ?.description
+                          }
+                        </span>
+                      </p>
+                    </div>
+                  )}
+
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                    <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
                       Password <span className="text-red-500">*</span>
                     </label>
-                    <input
-                      type="password"
-                      value={formData.password}
-                      onChange={(e) =>
-                        handleInputChange("password", e.target.value)
-                      }
-                      className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:border-transparent bg-white dark:bg-slate-700 text-slate-900 dark:text-white transition-colors ${
-                        errors.password
-                          ? "border-red-500 focus:ring-red-500"
-                          : "border-slate-300 dark:border-slate-600 focus:ring-blue-500"
-                      }`}
-                    />
+                    <div className="relative group">
+                      <Lock className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400 transition-colors" />
+                      <input
+                        type={showPassword ? "text" : "password"}
+                        value={formData.password}
+                        onChange={(e) =>
+                          handleInputChange("password", e.target.value)
+                        }
+                        className={`w-full pl-12 pr-12 py-4 bg-white dark:bg-slate-800 border rounded-xl text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:border-transparent transition-all duration-200 ${
+                          errors.password
+                            ? "border-red-500 focus:ring-red-500"
+                            : "border-slate-200 dark:border-slate-600"
+                        }`}
+                        style={
+                          !errors.password
+                            ? ({
+                                "--tw-ring-color": seasonalColors.primary,
+                              } as React.CSSProperties)
+                            : undefined
+                        }
+                        placeholder={
+                          authMode === "signup"
+                            ? "Create a password"
+                            : "Enter your password"
+                        }
+                        required
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-4 top-1/2 transform -translate-y-1/2 text-slate-400 transition-colors"
+                        style={{
+                          color: showPassword
+                            ? seasonalColors.primary
+                            : undefined,
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.color = seasonalColors.primary;
+                        }}
+                        onMouseLeave={(e) => {
+                          if (!showPassword) {
+                            e.currentTarget.style.color = "";
+                          }
+                        }}
+                      >
+                        {showPassword ? (
+                          <EyeOff className="w-5 h-5" />
+                        ) : (
+                          <Eye className="w-5 h-5" />
+                        )}
+                      </button>
+                    </div>
                     {renderError("password")}
                   </div>
 
                   {authMode === "signup" && (
                     <div>
-                      <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                      <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
                         Confirm Password <span className="text-red-500">*</span>
                       </label>
-                      <input
-                        type="password"
-                        value={formData.confirmPassword}
-                        onChange={(e) =>
-                          handleInputChange("confirmPassword", e.target.value)
-                        }
-                        className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:border-transparent bg-white dark:bg-slate-700 text-slate-900 dark:text-white transition-colors ${
-                          errors.confirmPassword
-                            ? "border-red-500 focus:ring-red-500"
-                            : "border-slate-300 dark:border-slate-600 focus:ring-blue-500"
-                        }`}
-                      />
+                      <div className="relative group">
+                        <Lock className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400 transition-colors" />
+                        <input
+                          type={showConfirmPassword ? "text" : "password"}
+                          value={formData.confirmPassword}
+                          onChange={(e) =>
+                            handleInputChange("confirmPassword", e.target.value)
+                          }
+                          className={`w-full pl-12 pr-12 py-4 bg-white dark:bg-slate-800 border rounded-xl text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:border-transparent transition-all duration-200 ${
+                            errors.confirmPassword
+                              ? "border-red-500 focus:ring-red-500"
+                              : "border-slate-200 dark:border-slate-600"
+                          }`}
+                          style={
+                            !errors.confirmPassword
+                              ? ({
+                                  "--tw-ring-color": seasonalColors.primary,
+                                } as React.CSSProperties)
+                              : undefined
+                          }
+                          placeholder="Confirm your password"
+                          required
+                        />
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setShowConfirmPassword(!showConfirmPassword)
+                          }
+                          className="absolute right-4 top-1/2 transform -translate-y-1/2 text-slate-400 transition-colors"
+                          style={{
+                            color: showConfirmPassword
+                              ? seasonalColors.primary
+                              : undefined,
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.color =
+                              seasonalColors.primary;
+                          }}
+                          onMouseLeave={(e) => {
+                            if (!showConfirmPassword) {
+                              e.currentTarget.style.color = "";
+                            }
+                          }}
+                        >
+                          {showConfirmPassword ? (
+                            <EyeOff className="w-5 h-5" />
+                          ) : (
+                            <Eye className="w-5 h-5" />
+                          )}
+                        </button>
+                      </div>
                       {renderError("confirmPassword")}
                     </div>
                   )}
 
+                  {authMode === "signup" && (
+                    <div className="flex items-start space-x-3">
+                      <input
+                        type="checkbox"
+                        id="terms"
+                        className="w-4 h-4 bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 rounded transition-colors mt-1"
+                        style={{
+                          accentColor: seasonalColors.primary,
+                        }}
+                        required
+                      />
+                      <label
+                        htmlFor="terms"
+                        className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed"
+                      >
+                        I agree to the{" "}
+                        <a
+                          href="#"
+                          className="font-medium transition-colors"
+                          style={{
+                            color: seasonalColors.primary,
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.color =
+                              seasonalColors.primaryHover;
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.color =
+                              seasonalColors.primary;
+                          }}
+                        >
+                          Privacy Policy
+                        </a>
+                      </label>
+                    </div>
+                  )}
+
                   {errors.auth && (
-                    <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 rounded-lg p-4">
+                    <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 rounded-xl p-4">
                       <p className="text-red-600 dark:text-red-400 text-sm flex items-center">
                         <AlertCircle className="w-4 h-4 mr-2" />
                         {errors.auth}
