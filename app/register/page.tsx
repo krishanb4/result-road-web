@@ -1,9 +1,6 @@
 "use client";
-import { useSeasonalColors } from "@/contexts/ThemeContext";
-import { Navigation } from "@/components/ui/Navigation";
-import { Footer } from "@/components/ui/Footer";
+import { useState } from "react";
 import {
-  Calendar,
   Upload,
   User,
   Users,
@@ -12,16 +9,35 @@ import {
   Shield,
   CheckCircle2,
   AlertCircle,
+  Loader2,
 } from "lucide-react";
-import { useState } from "react";
+
+// Import your Firebase instances
+import { auth, db } from "@/lib/firebase";
+import { Navigation } from "@/components/ui/Navigation";
+import { Footer } from "@/components/ui/Footer";
+import { useSeasonalColors } from "@/contexts/ThemeContext";
+import {
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+} from "firebase/auth";
+import { doc, setDoc, serverTimestamp } from "firebase/firestore";
+import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
+
+// Initialize storage
+const storage = getStorage();
 
 interface FormData {
+  // Auth fields
+  emailAddress: string;
+  password: string;
+  confirmPassword: string;
+
   // Client Details
   firstName: string;
   lastName: string;
   dateOfBirth: string;
   phoneNumber: string;
-  emailAddress: string;
   streetAddress: string;
   city: string;
   state: string;
@@ -66,14 +82,22 @@ interface FormData {
 
 export default function RegisterPage() {
   const seasonalColors = useSeasonalColors();
-  const [currentStep, setCurrentStep] = useState(1);
-  const [errors, setErrors] = useState<Record<string, boolean>>({});
+  const [currentStep, setCurrentStep] = useState(0);
+  const [errors, setErrors] = useState<Record<string, boolean | string>>({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [authMode, setAuthMode] = useState<"signup" | "signin">("signup");
+  const [successMessage, setSuccessMessage] = useState("");
+  const [currentUser, setCurrentUser] = useState<any>(null);
+
   const [formData, setFormData] = useState<FormData>({
+    emailAddress: "",
+    password: "",
+    confirmPassword: "",
     firstName: "",
     lastName: "",
     dateOfBirth: "",
     phoneNumber: "",
-    emailAddress: "",
     streetAddress: "",
     city: "",
     state: "",
@@ -108,7 +132,7 @@ export default function RegisterPage() {
     fileUpload: null,
   });
 
-  const totalSteps = 5;
+  const totalSteps = 6;
 
   const handleInputChange = (
     field: keyof FormData,
@@ -118,7 +142,6 @@ export default function RegisterPage() {
       ...prev,
       [field]: value,
     }));
-    // Clear error when user starts typing
     if (errors[field]) {
       setErrors((prev) => ({
         ...prev,
@@ -127,8 +150,96 @@ export default function RegisterPage() {
     }
   };
 
+  const validateAuth = (): boolean => {
+    const newErrors: Record<string, boolean | string> = {};
+    let isValid = true;
+
+    if (!formData.emailAddress.trim()) {
+      newErrors.emailAddress = "Email is required";
+      isValid = false;
+    } else if (!/\S+@\S+\.\S+/.test(formData.emailAddress)) {
+      newErrors.emailAddress = "Please enter a valid email";
+      isValid = false;
+    }
+
+    if (!formData.password) {
+      newErrors.password = "Password is required";
+      isValid = false;
+    } else if (formData.password.length < 6) {
+      newErrors.password = "Password must be at least 6 characters";
+      isValid = false;
+    }
+
+    if (authMode === "signup") {
+      if (!formData.confirmPassword) {
+        newErrors.confirmPassword = "Please confirm your password";
+        isValid = false;
+      } else if (formData.password !== formData.confirmPassword) {
+        newErrors.confirmPassword = "Passwords do not match";
+        isValid = false;
+      }
+    }
+
+    setErrors(newErrors);
+    return isValid;
+  };
+
+  const handleAuth = async () => {
+    if (!validateAuth()) return;
+
+    setIsSubmitting(true);
+    try {
+      let userCredential;
+
+      if (authMode === "signup") {
+        userCredential = await createUserWithEmailAndPassword(
+          auth,
+          formData.emailAddress,
+          formData.password
+        );
+      } else {
+        userCredential = await signInWithEmailAndPassword(
+          auth,
+          formData.emailAddress,
+          formData.password
+        );
+      }
+
+      setCurrentUser(userCredential.user);
+      setIsAuthenticated(true);
+      setCurrentStep(1);
+    } catch (error: any) {
+      console.error("Authentication error:", error);
+      let errorMessage = "Authentication failed";
+
+      switch (error.code) {
+        case "auth/email-already-in-use":
+          errorMessage = "An account with this email already exists";
+          break;
+        case "auth/weak-password":
+          errorMessage = "Password is too weak";
+          break;
+        case "auth/user-not-found":
+          errorMessage = "No account found with this email";
+          break;
+        case "auth/wrong-password":
+          errorMessage = "Incorrect password";
+          break;
+        case "auth/invalid-email":
+          errorMessage = "Invalid email address";
+          break;
+        default:
+          errorMessage = error.message;
+      }
+
+      setErrors({ auth: errorMessage });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   const validateStep = (step: number): boolean => {
-    const newErrors: Record<string, boolean> = {};
+    const newErrors: Record<string, boolean | string> = {};
     let isValid = true;
 
     switch (step) {
@@ -149,9 +260,6 @@ export default function RegisterPage() {
             isValid = false;
           }
         });
-        break;
-      case 2:
-        // Representative details are optional
         break;
       case 3:
         const step3Required = [
@@ -202,29 +310,191 @@ export default function RegisterPage() {
   };
 
   const handleNext = () => {
-    if (validateStep(currentStep) && currentStep < totalSteps) {
+    if (currentStep === 0) {
+      handleAuth();
+      return;
+    }
+
+    if (validateStep(currentStep) && currentStep < totalSteps - 1) {
       setCurrentStep(currentStep + 1);
     }
   };
 
   const handlePrevious = () => {
-    if (currentStep > 1) {
+    if (currentStep > 0) {
       setCurrentStep(currentStep - 1);
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    console.log("Form submitted:", formData);
-    // Handle form submission here
+  const uploadFile = async (file: File): Promise<string | null> => {
+    if (!file || !currentUser) return null;
+
+    try {
+      // Create a unique filename with timestamp
+      const timestamp = Date.now();
+      const fileExtension = file.name.split(".").pop();
+      const fileName = `${timestamp}-${file.name}`;
+
+      // Create storage reference
+      const fileRef = ref(storage, `ndis-plans/${currentUser.uid}/${fileName}`);
+
+      // Upload file
+      const snapshot = await uploadBytes(fileRef, file);
+
+      // Get download URL
+      const downloadURL = await getDownloadURL(snapshot.ref);
+
+      return downloadURL;
+    } catch (error) {
+      console.error("Error uploading file:", error);
+      throw new Error("Failed to upload file. Please try again.");
+    }
+  };
+
+  const handleSubmit = async () => {
+    if (!validateStep(currentStep) || !currentUser) return;
+
+    setIsSubmitting(true);
+    try {
+      // Upload file if present
+      let fileUrl = null;
+      if (formData.fileUpload) {
+        fileUrl = await uploadFile(formData.fileUpload);
+      }
+
+      // Prepare user data for Firestore
+      const userData = {
+        // Personal Information
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        dateOfBirth: formData.dateOfBirth,
+        phoneNumber: formData.phoneNumber,
+        email: formData.emailAddress,
+        address: {
+          street: formData.streetAddress,
+          city: formData.city,
+          state: formData.state,
+          postcode: formData.postcode,
+        },
+        physicalInfo: {
+          height: formData.height ? parseInt(formData.height) : null,
+          weight: formData.weight ? parseInt(formData.weight) : null,
+        },
+
+        // Representative Information (if provided)
+        representative: formData.repFirstName
+          ? {
+              firstName: formData.repFirstName,
+              lastName: formData.repLastName,
+              phone: formData.repPhoneNumber,
+              email: formData.repEmail,
+              address: {
+                street: formData.repStreetAddress,
+                city: formData.repCity,
+                state: formData.repState,
+                postcode: formData.repPostcode,
+              },
+            }
+          : null,
+
+        // NDIS Information
+        ndis: {
+          planType: formData.planType,
+          planManagerName: formData.planManagerName,
+          planManagerAgency: formData.planManagerAgency,
+          ndisNumber: formData.ndisNumber,
+          availableFunding: formData.availableFunding,
+          planStartDate: formData.planStartDate,
+          planReviewDate: formData.planReviewDate,
+          goals: formData.clientGoals,
+          planDocumentUrl: fileUrl,
+        },
+
+        // Referrer Information
+        referrer: {
+          firstName: formData.referrerFirstName,
+          lastName: formData.referrerLastName,
+          agency: formData.referrerAgency,
+          role: formData.referrerRole,
+          email: formData.referrerEmail,
+          phone: formData.referrerPhone,
+          consentObtained: formData.consentObtained,
+        },
+
+        // Referral Information
+        referral: {
+          type: formData.referralType,
+          medicalInformation: formData.medicalInformation,
+        },
+
+        // User role and metadata
+        role: "participant",
+        registrationStatus: "pending",
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      };
+
+      // Save to Firestore users collection
+      const userDocRef = doc(db, "users", currentUser.uid);
+      await setDoc(userDocRef, userData);
+
+      // Create initial care plan document
+      const carePlanData = {
+        participantId: currentUser.uid,
+        goals: formData.clientGoals,
+        medicalInfo: formData.medicalInformation,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+        status: "active",
+      };
+
+      const carePlanRef = doc(db, "carePlans", currentUser.uid);
+      await setDoc(carePlanRef, carePlanData);
+
+      setSuccessMessage(
+        "Registration completed successfully! You will be contacted soon by our team to schedule your initial assessment."
+      );
+    } catch (error: any) {
+      console.error("Error submitting registration:", error);
+      setErrors({
+        submit:
+          error.message || "Failed to submit registration. Please try again.",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0] || null;
+
+    // Validate file size (10MB limit)
+    if (file && file.size > 10 * 1024 * 1024) {
+      setErrors({ fileUpload: "File size must be less than 10MB" });
+      return;
+    }
+
+    // Validate file type
+    const allowedTypes = [
+      "application/pdf",
+      "application/msword",
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      "image/jpeg",
+      "image/png",
+      "image/jpg",
+    ];
+    if (file && !allowedTypes.includes(file.type)) {
+      setErrors({
+        fileUpload: "Please upload a PDF, DOC, DOCX, JPG, or PNG file",
+      });
+      return;
+    }
+
     handleInputChange("fileUpload", file);
   };
 
   const stepTitles = [
+    "Account Setup",
     "Client Details",
     "Representative Details",
     "NDIS Information",
@@ -232,13 +502,47 @@ export default function RegisterPage() {
     "Referral Information",
   ];
 
-  const stepIcons = [User, Users, Shield, Heart, FileText];
+  const stepIcons = [User, User, Users, Shield, Heart, FileText];
+
+  const renderError = (field: string) => {
+    const error = errors[field];
+    if (!error) return null;
+
+    return (
+      <p className="mt-1 text-sm text-red-500 flex items-center">
+        <AlertCircle className="w-4 h-4 mr-1" />
+        {typeof error === "string" ? error : "This field is required"}
+      </p>
+    );
+  };
+
+  if (successMessage) {
+    return (
+      <div className="min-h-screen bg-slate-50 dark:bg-slate-900 flex items-center justify-center p-6">
+        <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl p-8 max-w-md w-full text-center">
+          <CheckCircle2 className="w-16 h-16 text-green-500 mx-auto mb-4" />
+          <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">
+            Registration Complete!
+          </h2>
+          <p className="text-slate-600 dark:text-slate-400 mb-4">
+            {successMessage}
+          </p>
+          <button
+            onClick={() => (window.location.href = "/")}
+            className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            Return to Home
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-900">
       <Navigation />
 
-      <div className="py-12 px-6">
+      <div className="py-12 px-6 mt-12">
         <div className="max-w-4xl mx-auto">
           {/* Header */}
           <div className="text-center mb-12">
@@ -256,7 +560,7 @@ export default function RegisterPage() {
             <div className="relative flex items-center justify-between mb-4">
               {stepTitles.map((title, index) => {
                 const IconComponent = stepIcons[index];
-                const stepNumber = index + 1;
+                const stepNumber = index;
                 const isActive = stepNumber === currentStep;
                 const isCompleted = stepNumber < currentStep;
 
@@ -303,7 +607,7 @@ export default function RegisterPage() {
                 <div
                   className="h-full bg-green-500 transition-all duration-500 ease-in-out"
                   style={{
-                    width: `${((currentStep - 1) / (totalSteps - 1)) * 100}%`,
+                    width: `${(currentStep / (totalSteps - 1)) * 100}%`,
                   }}
                 />
               </div>
@@ -311,10 +615,122 @@ export default function RegisterPage() {
           </div>
 
           {/* Form Container */}
-          <form
-            onSubmit={handleSubmit}
-            className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl p-8"
-          >
+          <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl p-8">
+            {/* Step 0: Authentication */}
+            {currentStep === 0 && (
+              <div className="space-y-6">
+                <div className="border-b border-slate-200 dark:border-slate-700 pb-4 mb-6">
+                  <h2 className="text-2xl font-bold text-slate-900 dark:text-white flex items-center">
+                    <User
+                      className="w-6 h-6 mr-3"
+                      style={{ color: seasonalColors.primary }}
+                    />
+                    Account Setup
+                  </h2>
+                  <p className="text-slate-600 dark:text-slate-400 mt-2">
+                    Create an account or sign in to continue with registration
+                  </p>
+                </div>
+
+                <div className="flex justify-center mb-6">
+                  <div className="flex bg-slate-100 dark:bg-slate-700 rounded-lg p-1">
+                    <button
+                      type="button"
+                      onClick={() => setAuthMode("signup")}
+                      className={`px-4 py-2 rounded-md font-medium transition-all ${
+                        authMode === "signup"
+                          ? "bg-white dark:bg-slate-600 text-slate-900 dark:text-white shadow"
+                          : "text-slate-600 dark:text-slate-400"
+                      }`}
+                    >
+                      Sign Up
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setAuthMode("signin")}
+                      className={`px-4 py-2 rounded-md font-medium transition-all ${
+                        authMode === "signin"
+                          ? "bg-white dark:bg-slate-600 text-slate-900 dark:text-white shadow"
+                          : "text-slate-600 dark:text-slate-400"
+                      }`}
+                    >
+                      Sign In
+                    </button>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                      Email Address <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="email"
+                      value={formData.emailAddress}
+                      onChange={(e) =>
+                        handleInputChange("emailAddress", e.target.value)
+                      }
+                      className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:border-transparent bg-white dark:bg-slate-700 text-slate-900 dark:text-white transition-colors ${
+                        errors.emailAddress
+                          ? "border-red-500 focus:ring-red-500"
+                          : "border-slate-300 dark:border-slate-600 focus:ring-blue-500"
+                      }`}
+                    />
+                    {renderError("emailAddress")}
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                      Password <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="password"
+                      value={formData.password}
+                      onChange={(e) =>
+                        handleInputChange("password", e.target.value)
+                      }
+                      className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:border-transparent bg-white dark:bg-slate-700 text-slate-900 dark:text-white transition-colors ${
+                        errors.password
+                          ? "border-red-500 focus:ring-red-500"
+                          : "border-slate-300 dark:border-slate-600 focus:ring-blue-500"
+                      }`}
+                    />
+                    {renderError("password")}
+                  </div>
+
+                  {authMode === "signup" && (
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                        Confirm Password <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="password"
+                        value={formData.confirmPassword}
+                        onChange={(e) =>
+                          handleInputChange("confirmPassword", e.target.value)
+                        }
+                        className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:border-transparent bg-white dark:bg-slate-700 text-slate-900 dark:text-white transition-colors ${
+                          errors.confirmPassword
+                            ? "border-red-500 focus:ring-red-500"
+                            : "border-slate-300 dark:border-slate-600 focus:ring-blue-500"
+                        }`}
+                      />
+                      {renderError("confirmPassword")}
+                    </div>
+                  )}
+
+                  {errors.auth && (
+                    <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 rounded-lg p-4">
+                      <p className="text-red-600 dark:text-red-400 text-sm flex items-center">
+                        <AlertCircle className="w-4 h-4 mr-2" />
+                        {errors.auth}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
             {/* Step 1: Client Details */}
             {currentStep === 1 && (
               <div className="space-y-6">
@@ -335,7 +751,6 @@ export default function RegisterPage() {
                     </label>
                     <input
                       type="text"
-                      required
                       value={formData.firstName}
                       onChange={(e) =>
                         handleInputChange("firstName", e.target.value)
@@ -346,12 +761,7 @@ export default function RegisterPage() {
                           : "border-slate-300 dark:border-slate-600 focus:ring-blue-500"
                       }`}
                     />
-                    {errors.firstName && (
-                      <p className="mt-1 text-sm text-red-500 flex items-center">
-                        <AlertCircle className="w-4 h-4 mr-1" />
-                        This field is required
-                      </p>
-                    )}
+                    {renderError("firstName")}
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
@@ -359,7 +769,6 @@ export default function RegisterPage() {
                     </label>
                     <input
                       type="text"
-                      required
                       value={formData.lastName}
                       onChange={(e) =>
                         handleInputChange("lastName", e.target.value)
@@ -370,12 +779,7 @@ export default function RegisterPage() {
                           : "border-slate-300 dark:border-slate-600 focus:ring-blue-500"
                       }`}
                     />
-                    {errors.lastName && (
-                      <p className="mt-1 text-sm text-red-500 flex items-center">
-                        <AlertCircle className="w-4 h-4 mr-1" />
-                        This field is required
-                      </p>
-                    )}
+                    {renderError("lastName")}
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
@@ -383,7 +787,6 @@ export default function RegisterPage() {
                     </label>
                     <input
                       type="date"
-                      required
                       value={formData.dateOfBirth}
                       onChange={(e) =>
                         handleInputChange("dateOfBirth", e.target.value)
@@ -394,12 +797,7 @@ export default function RegisterPage() {
                           : "border-slate-300 dark:border-slate-600 focus:ring-blue-500"
                       }`}
                     />
-                    {errors.dateOfBirth && (
-                      <p className="mt-1 text-sm text-red-500 flex items-center">
-                        <AlertCircle className="w-4 h-4 mr-1" />
-                        This field is required
-                      </p>
-                    )}
+                    {renderError("dateOfBirth")}
                   </div>
                 </div>
 
@@ -410,7 +808,6 @@ export default function RegisterPage() {
                     </label>
                     <input
                       type="tel"
-                      required
                       value={formData.phoneNumber}
                       onChange={(e) =>
                         handleInputChange("phoneNumber", e.target.value)
@@ -421,125 +818,7 @@ export default function RegisterPage() {
                           : "border-slate-300 dark:border-slate-600 focus:ring-blue-500"
                       }`}
                     />
-                    {errors.phoneNumber && (
-                      <p className="mt-1 text-sm text-red-500 flex items-center">
-                        <AlertCircle className="w-4 h-4 mr-1" />
-                        This field is required
-                      </p>
-                    )}
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                      Email Address
-                    </label>
-                    <input
-                      type="email"
-                      value={formData.emailAddress}
-                      onChange={(e) =>
-                        handleInputChange("emailAddress", e.target.value)
-                      }
-                      className="w-full px-4 py-3 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-slate-700 text-slate-900 dark:text-white"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                    Street Address <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={formData.streetAddress}
-                    onChange={(e) =>
-                      handleInputChange("streetAddress", e.target.value)
-                    }
-                    className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:border-transparent bg-white dark:bg-slate-700 text-slate-900 dark:text-white transition-colors ${
-                      errors.streetAddress
-                        ? "border-red-500 focus:ring-red-500"
-                        : "border-slate-300 dark:border-slate-600 focus:ring-blue-500"
-                    }`}
-                  />
-                  {errors.streetAddress && (
-                    <p className="mt-1 text-sm text-red-500 flex items-center">
-                      <AlertCircle className="w-4 h-4 mr-1" />
-                      This field is required
-                    </p>
-                  )}
-                </div>
-
-                <div className="grid md:grid-cols-5 gap-4">
-                  <div className="md:col-span-2">
-                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                      City <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      value={formData.city}
-                      onChange={(e) =>
-                        handleInputChange("city", e.target.value)
-                      }
-                      className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:border-transparent bg-white dark:bg-slate-700 text-slate-900 dark:text-white transition-colors ${
-                        errors.city
-                          ? "border-red-500 focus:ring-red-500"
-                          : "border-slate-300 dark:border-slate-600 focus:ring-blue-500"
-                      }`}
-                    />
-                    {errors.city && (
-                      <p className="mt-1 text-sm text-red-500 flex items-center">
-                        <AlertCircle className="w-4 h-4 mr-1" />
-                        This field is required
-                      </p>
-                    )}
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                      State <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      value={formData.state}
-                      onChange={(e) =>
-                        handleInputChange("state", e.target.value)
-                      }
-                      className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:border-transparent bg-white dark:bg-slate-700 text-slate-900 dark:text-white transition-colors ${
-                        errors.state
-                          ? "border-red-500 focus:ring-red-500"
-                          : "border-slate-300 dark:border-slate-600 focus:ring-blue-500"
-                      }`}
-                    />
-                    {errors.state && (
-                      <p className="mt-1 text-sm text-red-500 flex items-center">
-                        <AlertCircle className="w-4 h-4 mr-1" />
-                        This field is required
-                      </p>
-                    )}
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                      Postcode <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      value={formData.postcode}
-                      onChange={(e) =>
-                        handleInputChange("postcode", e.target.value)
-                      }
-                      className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:border-transparent bg-white dark:bg-slate-700 text-slate-900 dark:text-white transition-colors ${
-                        errors.postcode
-                          ? "border-red-500 focus:ring-red-500"
-                          : "border-slate-300 dark:border-slate-600 focus:ring-blue-500"
-                      }`}
-                    />
-                    {errors.postcode && (
-                      <p className="mt-1 text-sm text-red-500 flex items-center">
-                        <AlertCircle className="w-4 h-4 mr-1" />
-                        This field is required
-                      </p>
-                    )}
+                    {renderError("phoneNumber")}
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
@@ -556,19 +835,79 @@ export default function RegisterPage() {
                   </div>
                 </div>
 
-                <div className="grid md:grid-cols-5 gap-4">
-                  <div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                    Street Address <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.streetAddress}
+                    onChange={(e) =>
+                      handleInputChange("streetAddress", e.target.value)
+                    }
+                    className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:border-transparent bg-white dark:bg-slate-700 text-slate-900 dark:text-white transition-colors ${
+                      errors.streetAddress
+                        ? "border-red-500 focus:ring-red-500"
+                        : "border-slate-300 dark:border-slate-600 focus:ring-blue-500"
+                    }`}
+                  />
+                  {renderError("streetAddress")}
+                </div>
+
+                <div className="grid md:grid-cols-4 gap-4">
+                  <div className="md:col-span-2">
                     <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                      Weight (kg)
+                      City <span className="text-red-500">*</span>
                     </label>
                     <input
-                      type="number"
-                      value={formData.weight}
+                      type="text"
+                      value={formData.city}
                       onChange={(e) =>
-                        handleInputChange("weight", e.target.value)
+                        handleInputChange("city", e.target.value)
                       }
-                      className="w-full px-4 py-3 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:border-transparent bg-white dark:bg-slate-700 text-slate-900 dark:text-white"
+                      className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:border-transparent bg-white dark:bg-slate-700 text-slate-900 dark:text-white transition-colors ${
+                        errors.city
+                          ? "border-red-500 focus:ring-red-500"
+                          : "border-slate-300 dark:border-slate-600 focus:ring-blue-500"
+                      }`}
                     />
+                    {renderError("city")}
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                      State <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.state}
+                      onChange={(e) =>
+                        handleInputChange("state", e.target.value)
+                      }
+                      className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:border-transparent bg-white dark:bg-slate-700 text-slate-900 dark:text-white transition-colors ${
+                        errors.state
+                          ? "border-red-500 focus:ring-red-500"
+                          : "border-slate-300 dark:border-slate-600 focus:ring-blue-500"
+                      }`}
+                    />
+                    {renderError("state")}
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                      Postcode <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.postcode}
+                      onChange={(e) =>
+                        handleInputChange("postcode", e.target.value)
+                      }
+                      className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:border-transparent bg-white dark:bg-slate-700 text-slate-900 dark:text-white transition-colors ${
+                        errors.postcode
+                          ? "border-red-500 focus:ring-red-500"
+                          : "border-slate-300 dark:border-slate-600 focus:ring-blue-500"
+                      }`}
+                    />
+                    {renderError("postcode")}
                   </div>
                 </div>
               </div>
@@ -583,8 +922,12 @@ export default function RegisterPage() {
                       className="w-6 h-6 mr-3"
                       style={{ color: seasonalColors.primary }}
                     />
-                    Client Representative Details (If Applicable)
+                    Representative Details (Optional)
                   </h2>
+                  <p className="text-slate-600 dark:text-slate-400 mt-2">
+                    If applicable, provide details for the client's
+                    representative
+                  </p>
                 </div>
 
                 <div className="grid md:grid-cols-2 gap-6">
@@ -615,91 +958,6 @@ export default function RegisterPage() {
                     />
                   </div>
                 </div>
-
-                <div className="grid md:grid-cols-2 gap-6">
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                      Phone Number
-                    </label>
-                    <input
-                      type="tel"
-                      value={formData.repPhoneNumber}
-                      onChange={(e) =>
-                        handleInputChange("repPhoneNumber", e.target.value)
-                      }
-                      className="w-full px-4 py-3 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:border-transparent bg-white dark:bg-slate-700 text-slate-900 dark:text-white"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                      Email
-                    </label>
-                    <input
-                      type="email"
-                      value={formData.repEmail}
-                      onChange={(e) =>
-                        handleInputChange("repEmail", e.target.value)
-                      }
-                      className="w-full px-4 py-3 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:border-transparent bg-white dark:bg-slate-700 text-slate-900 dark:text-white"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                    Street Address
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.repStreetAddress}
-                    onChange={(e) =>
-                      handleInputChange("repStreetAddress", e.target.value)
-                    }
-                    className="w-full px-4 py-3 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:border-transparent bg-white dark:bg-slate-700 text-slate-900 dark:text-white"
-                  />
-                </div>
-
-                <div className="grid md:grid-cols-3 gap-6">
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                      City
-                    </label>
-                    <input
-                      type="text"
-                      value={formData.repCity}
-                      onChange={(e) =>
-                        handleInputChange("repCity", e.target.value)
-                      }
-                      className="w-full px-4 py-3 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:border-transparent bg-white dark:bg-slate-700 text-slate-900 dark:text-white"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                      State
-                    </label>
-                    <input
-                      type="text"
-                      value={formData.repState}
-                      onChange={(e) =>
-                        handleInputChange("repState", e.target.value)
-                      }
-                      className="w-full px-4 py-3 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:border-transparent bg-white dark:bg-slate-700 text-slate-900 dark:text-white"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                      Postcode
-                    </label>
-                    <input
-                      type="text"
-                      value={formData.repPostcode}
-                      onChange={(e) =>
-                        handleInputChange("repPostcode", e.target.value)
-                      }
-                      className="w-full px-4 py-3 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:border-transparent bg-white dark:bg-slate-700 text-slate-900 dark:text-white"
-                    />
-                  </div>
-                </div>
               </div>
             )}
 
@@ -712,13 +970,13 @@ export default function RegisterPage() {
                       className="w-6 h-6 mr-3"
                       style={{ color: seasonalColors.primary }}
                     />
-                    NDIS Details
+                    NDIS Information
                   </h2>
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                    Plan <span className="text-red-500">*</span>
+                    Plan Type <span className="text-red-500">*</span>
                   </label>
                   <div className="space-y-2">
                     {["Plan Managed", "Self Managed", "Agency Managed"].map(
@@ -742,41 +1000,7 @@ export default function RegisterPage() {
                       )
                     )}
                   </div>
-                  {errors.planType && (
-                    <p className="mt-1 text-sm text-red-500 flex items-center">
-                      <AlertCircle className="w-4 h-4 mr-1" />
-                      Please select a plan type
-                    </p>
-                  )}
-                </div>
-
-                <div className="grid md:grid-cols-2 gap-6">
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                      Plan Manager Name (If Applicable)
-                    </label>
-                    <input
-                      type="text"
-                      value={formData.planManagerName}
-                      onChange={(e) =>
-                        handleInputChange("planManagerName", e.target.value)
-                      }
-                      className="w-full px-4 py-3 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:border-transparent bg-white dark:bg-slate-700 text-slate-900 dark:text-white"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                      Plan Manager Agency (If Applicable)
-                    </label>
-                    <input
-                      type="text"
-                      value={formData.planManagerAgency}
-                      onChange={(e) =>
-                        handleInputChange("planManagerAgency", e.target.value)
-                      }
-                      className="w-full px-4 py-3 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:border-transparent bg-white dark:bg-slate-700 text-slate-900 dark:text-white"
-                    />
-                  </div>
+                  {renderError("planType")}
                 </div>
 
                 <div className="grid md:grid-cols-2 gap-6">
@@ -786,7 +1010,6 @@ export default function RegisterPage() {
                     </label>
                     <input
                       type="text"
-                      required
                       value={formData.ndisNumber}
                       onChange={(e) =>
                         handleInputChange("ndisNumber", e.target.value)
@@ -797,16 +1020,11 @@ export default function RegisterPage() {
                           : "border-slate-300 dark:border-slate-600 focus:ring-blue-500"
                       }`}
                     />
-                    {errors.ndisNumber && (
-                      <p className="mt-1 text-sm text-red-500 flex items-center">
-                        <AlertCircle className="w-4 h-4 mr-1" />
-                        This field is required
-                      </p>
-                    )}
+                    {renderError("ndisNumber")}
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                      Available/Remaining Funding for Capacity Building Supports
+                      Available Funding
                     </label>
                     <input
                       type="text"
@@ -819,14 +1037,13 @@ export default function RegisterPage() {
                   </div>
                 </div>
 
-                <div className="grid md:grid-cols-3 gap-6">
+                <div className="grid md:grid-cols-2 gap-6">
                   <div>
                     <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
                       Plan Start Date <span className="text-red-500">*</span>
                     </label>
                     <input
                       type="date"
-                      required
                       value={formData.planStartDate}
                       onChange={(e) =>
                         handleInputChange("planStartDate", e.target.value)
@@ -837,12 +1054,7 @@ export default function RegisterPage() {
                           : "border-slate-300 dark:border-slate-600 focus:ring-blue-500"
                       }`}
                     />
-                    {errors.planStartDate && (
-                      <p className="mt-1 text-sm text-red-500 flex items-center">
-                        <AlertCircle className="w-4 h-4 mr-1" />
-                        This field is required
-                      </p>
-                    )}
+                    {renderError("planStartDate")}
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
@@ -850,7 +1062,6 @@ export default function RegisterPage() {
                     </label>
                     <input
                       type="date"
-                      required
                       value={formData.planReviewDate}
                       onChange={(e) =>
                         handleInputChange("planReviewDate", e.target.value)
@@ -861,38 +1072,29 @@ export default function RegisterPage() {
                           : "border-slate-300 dark:border-slate-600 focus:ring-blue-500"
                       }`}
                     />
-                    {errors.planReviewDate && (
-                      <p className="mt-1 text-sm text-red-500 flex items-center">
-                        <AlertCircle className="w-4 h-4 mr-1" />
-                        This field is required
-                      </p>
-                    )}
+                    {renderError("planReviewDate")}
                   </div>
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                      Client Goals (As stated in the NDIS plan){" "}
-                      <span className="text-red-500">*</span>
-                    </label>
-                    <textarea
-                      required
-                      value={formData.clientGoals}
-                      onChange={(e) =>
-                        handleInputChange("clientGoals", e.target.value)
-                      }
-                      rows={3}
-                      className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:border-transparent bg-white dark:bg-slate-700 text-slate-900 dark:text-white transition-colors ${
-                        errors.clientGoals
-                          ? "border-red-500 focus:ring-red-500"
-                          : "border-slate-300 dark:border-slate-600 focus:ring-blue-500"
-                      }`}
-                    />
-                    {errors.clientGoals && (
-                      <p className="mt-1 text-sm text-red-500 flex items-center">
-                        <AlertCircle className="w-4 h-4 mr-1" />
-                        This field is required
-                      </p>
-                    )}
-                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                    Client Goals (As stated in NDIS plan){" "}
+                    <span className="text-red-500">*</span>
+                  </label>
+                  <textarea
+                    value={formData.clientGoals}
+                    onChange={(e) =>
+                      handleInputChange("clientGoals", e.target.value)
+                    }
+                    rows={4}
+                    className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:border-transparent bg-white dark:bg-slate-700 text-slate-900 dark:text-white transition-colors ${
+                      errors.clientGoals
+                        ? "border-red-500 focus:ring-red-500"
+                        : "border-slate-300 dark:border-slate-600 focus:ring-blue-500"
+                    }`}
+                    placeholder="Describe the client's goals as outlined in their NDIS plan..."
+                  />
+                  {renderError("clientGoals")}
                 </div>
               </div>
             )}
@@ -906,7 +1108,7 @@ export default function RegisterPage() {
                       className="w-6 h-6 mr-3"
                       style={{ color: seasonalColors.primary }}
                     />
-                    Referrer Details (Person Making the Referral)
+                    Referrer Details
                   </h2>
                 </div>
 
@@ -917,7 +1119,6 @@ export default function RegisterPage() {
                     </label>
                     <input
                       type="text"
-                      required
                       value={formData.referrerFirstName}
                       onChange={(e) =>
                         handleInputChange("referrerFirstName", e.target.value)
@@ -928,12 +1129,7 @@ export default function RegisterPage() {
                           : "border-slate-300 dark:border-slate-600 focus:ring-blue-500"
                       }`}
                     />
-                    {errors.referrerFirstName && (
-                      <p className="mt-1 text-sm text-red-500 flex items-center">
-                        <AlertCircle className="w-4 h-4 mr-1" />
-                        This field is required
-                      </p>
-                    )}
+                    {renderError("referrerFirstName")}
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
@@ -941,7 +1137,6 @@ export default function RegisterPage() {
                     </label>
                     <input
                       type="text"
-                      required
                       value={formData.referrerLastName}
                       onChange={(e) =>
                         handleInputChange("referrerLastName", e.target.value)
@@ -952,41 +1147,7 @@ export default function RegisterPage() {
                           : "border-slate-300 dark:border-slate-600 focus:ring-blue-500"
                       }`}
                     />
-                    {errors.referrerLastName && (
-                      <p className="mt-1 text-sm text-red-500 flex items-center">
-                        <AlertCircle className="w-4 h-4 mr-1" />
-                        This field is required
-                      </p>
-                    )}
-                  </div>
-                </div>
-
-                <div className="grid md:grid-cols-2 gap-6">
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                      Agency
-                    </label>
-                    <input
-                      type="text"
-                      value={formData.referrerAgency}
-                      onChange={(e) =>
-                        handleInputChange("referrerAgency", e.target.value)
-                      }
-                      className="w-full px-4 py-3 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-slate-700 text-slate-900 dark:text-white"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                      Role
-                    </label>
-                    <input
-                      type="text"
-                      value={formData.referrerRole}
-                      onChange={(e) =>
-                        handleInputChange("referrerRole", e.target.value)
-                      }
-                      className="w-full px-4 py-3 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-slate-700 text-slate-900 dark:text-white"
-                    />
+                    {renderError("referrerLastName")}
                   </div>
                 </div>
 
@@ -997,7 +1158,6 @@ export default function RegisterPage() {
                     </label>
                     <input
                       type="email"
-                      required
                       value={formData.referrerEmail}
                       onChange={(e) =>
                         handleInputChange("referrerEmail", e.target.value)
@@ -1008,12 +1168,7 @@ export default function RegisterPage() {
                           : "border-slate-300 dark:border-slate-600 focus:ring-blue-500"
                       }`}
                     />
-                    {errors.referrerEmail && (
-                      <p className="mt-1 text-sm text-red-500 flex items-center">
-                        <AlertCircle className="w-4 h-4 mr-1" />
-                        This field is required
-                      </p>
-                    )}
+                    {renderError("referrerEmail")}
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
@@ -1021,7 +1176,6 @@ export default function RegisterPage() {
                     </label>
                     <input
                       type="tel"
-                      required
                       value={formData.referrerPhone}
                       onChange={(e) =>
                         handleInputChange("referrerPhone", e.target.value)
@@ -1032,12 +1186,7 @@ export default function RegisterPage() {
                           : "border-slate-300 dark:border-slate-600 focus:ring-blue-500"
                       }`}
                     />
-                    {errors.referrerPhone && (
-                      <p className="mt-1 text-sm text-red-500 flex items-center">
-                        <AlertCircle className="w-4 h-4 mr-1" />
-                        This field is required
-                      </p>
-                    )}
+                    {renderError("referrerPhone")}
                   </div>
                 </div>
 
@@ -1061,23 +1210,17 @@ export default function RegisterPage() {
                     <div>
                       <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
                         I have obtained consent from the participant to make
-                        this referral and provide Result Road with the
-                        participant's personal and medical details.{" "}
+                        this referral and provide details.{" "}
                         <span className="text-red-500">*</span>
                       </span>
-                      {errors.consentObtained && (
-                        <p className="mt-1 text-sm text-red-500 flex items-center">
-                          <AlertCircle className="w-4 h-4 mr-1" />
-                          You must provide consent to continue
-                        </p>
-                      )}
+                      {renderError("consentObtained")}
                     </div>
                   </label>
                 </div>
               </div>
             )}
 
-            {/* Step 5: Reason for Referral */}
+            {/* Step 5: Referral Information */}
             {currentStep === 5 && (
               <div className="space-y-6">
                 <div className="border-b border-slate-200 dark:border-slate-700 pb-4 mb-6">
@@ -1086,7 +1229,7 @@ export default function RegisterPage() {
                       className="w-6 h-6 mr-3"
                       style={{ color: seasonalColors.primary }}
                     />
-                    Reason For Referral
+                    Referral Information
                   </h2>
                 </div>
 
@@ -1119,12 +1262,7 @@ export default function RegisterPage() {
                       </label>
                     ))}
                   </div>
-                  {errors.referralType && (
-                    <p className="mt-1 text-sm text-red-500 flex items-center">
-                      <AlertCircle className="w-4 h-4 mr-1" />
-                      Please select a referral type
-                    </p>
-                  )}
+                  {renderError("referralType")}
                 </div>
 
                 <div>
@@ -1133,7 +1271,6 @@ export default function RegisterPage() {
                     <span className="text-red-500">*</span>
                   </label>
                   <textarea
-                    required
                     value={formData.medicalInformation}
                     onChange={(e) =>
                       handleInputChange("medicalInformation", e.target.value)
@@ -1146,18 +1283,12 @@ export default function RegisterPage() {
                     }`}
                     placeholder="Please provide relevant medical information..."
                   />
-                  {errors.medicalInformation && (
-                    <p className="mt-1 text-sm text-red-500 flex items-center">
-                      <AlertCircle className="w-4 h-4 mr-1" />
-                      This field is required
-                    </p>
-                  )}
+                  {renderError("medicalInformation")}
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                    File Upload (Please attach a copy of the current NDIS plan
-                    if possible)
+                    File Upload (NDIS Plan Document)
                   </label>
                   <div className="border-2 border-dashed border-slate-300 dark:border-slate-600 rounded-lg p-6">
                     <div className="text-center">
@@ -1182,6 +1313,7 @@ export default function RegisterPage() {
                           File selected: {formData.fileUpload.name}
                         </p>
                       )}
+                      {renderError("fileUpload")}
                     </div>
                   </div>
                 </div>
@@ -1193,9 +1325,9 @@ export default function RegisterPage() {
               <button
                 type="button"
                 onClick={handlePrevious}
-                disabled={currentStep === 1}
+                disabled={currentStep === 0}
                 className={`px-6 py-3 rounded-lg font-medium transition-all duration-200 ${
-                  currentStep === 1
+                  currentStep === 0
                     ? "bg-slate-100 dark:bg-slate-700 text-slate-400 cursor-not-allowed"
                     : "bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-300 dark:hover:bg-slate-600"
                 }`}
@@ -1204,51 +1336,65 @@ export default function RegisterPage() {
               </button>
 
               <div className="flex space-x-4">
-                {currentStep < totalSteps ? (
+                {currentStep < totalSteps - 1 ? (
                   <button
                     type="button"
                     onClick={handleNext}
-                    className="px-8 py-3 rounded-lg font-medium text-white transition-all duration-200 hover:shadow-lg"
-                    style={{
-                      backgroundColor: seasonalColors.primary,
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.backgroundColor =
-                        seasonalColors.primaryHover;
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.backgroundColor =
-                        seasonalColors.primary;
-                    }}
+                    disabled={isSubmitting}
+                    className="px-8 py-3 rounded-lg font-medium text-white transition-all duration-200 hover:shadow-lg flex items-center"
+                    style={{ backgroundColor: seasonalColors.primary }}
                   >
-                    Next Step
+                    {isSubmitting && currentStep === 0 ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        {authMode === "signup"
+                          ? "Creating Account..."
+                          : "Signing In..."}
+                      </>
+                    ) : currentStep === 0 ? (
+                      authMode === "signup" ? (
+                        "Create Account"
+                      ) : (
+                        "Sign In"
+                      )
+                    ) : (
+                      "Next Step"
+                    )}
                   </button>
                 ) : (
                   <button
-                    type="submit"
-                    className="px-8 py-3 rounded-lg font-medium text-white transition-all duration-200 hover:shadow-lg"
-                    style={{
-                      backgroundColor: seasonalColors.primary,
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.backgroundColor =
-                        seasonalColors.primaryHover;
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.backgroundColor =
-                        seasonalColors.primary;
-                    }}
+                    type="button"
+                    onClick={handleSubmit}
+                    disabled={isSubmitting}
+                    className="px-8 py-3 rounded-lg font-medium text-white transition-all duration-200 hover:shadow-lg flex items-center"
+                    style={{ backgroundColor: seasonalColors.primary }}
                   >
-                    Submit Registration
+                    {isSubmitting ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        Submitting...
+                      </>
+                    ) : (
+                      "Submit Registration"
+                    )}
                   </button>
                 )}
               </div>
             </div>
-          </form>
-        </div>
-      </div>
 
-      <Footer />
+            {errors.submit && (
+              <div className="mt-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 rounded-lg p-4">
+                <p className="text-red-600 dark:text-red-400 text-sm flex items-center">
+                  <AlertCircle className="w-4 h-4 mr-2" />
+                  {errors.submit}
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+
+        <Footer />
+      </div>
     </div>
   );
 }
