@@ -16,6 +16,7 @@ import {
   signOut as firebaseSignOut,
   onAuthStateChanged,
   updateProfile as updateFirebaseProfile,
+  sendPasswordResetEmail,
 } from "firebase/auth";
 import {
   doc,
@@ -100,6 +101,7 @@ interface AuthContextType {
   signInWithGoogle: (role: UserRole) => Promise<void>;
   signOut: () => Promise<void>;
   updateProfile: (updates: Partial<UserProfile>) => Promise<void>;
+  resetPassword: (email: string) => Promise<void>;
   clearError: () => void;
 }
 
@@ -181,6 +183,42 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // Clear error function
   const clearError = () => setError(null);
+
+  // Reset password function
+  const resetPassword = async (email: string) => {
+    try {
+      setError(null);
+
+      await sendPasswordResetEmail(auth, email);
+
+      console.log("Password reset email sent successfully to:", email);
+    } catch (error: any) {
+      console.error("Reset password error:", error);
+
+      // Handle specific Firebase errors
+      let errorMessage = "Failed to send reset email";
+
+      switch (error.code) {
+        case "auth/invalid-email":
+          errorMessage = "Invalid email address";
+          break;
+        case "auth/user-not-found":
+          errorMessage = "No account found with this email address";
+          break;
+        case "auth/too-many-requests":
+          errorMessage = "Too many requests. Please try again later";
+          break;
+        case "auth/missing-email":
+          errorMessage = "Email address is required";
+          break;
+        default:
+          errorMessage = error.message || "Failed to send reset email";
+      }
+
+      setError(errorMessage);
+      throw new Error(errorMessage);
+    }
+  };
 
   // Sign up function
   const signUp = async (
@@ -469,6 +507,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     signInWithGoogle,
     signOut,
     updateProfile,
+    resetPassword,
     clearError,
   };
 

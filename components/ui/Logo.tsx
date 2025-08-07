@@ -47,10 +47,10 @@ export function Logo({
 
   const getLogoSrc = () => {
     if (variant === "white") {
-      return "/main-logo-light.png"; // Always use light logo for white variant
+      return "/main-logo-dark.png"; // Always use light logo for white variant
     }
     if (variant === "dark") {
-      return "/main-logo-light.png"; // Always use dark logo for dark variant
+      return "/main-logo-dark.png"; // Always use dark logo for dark variant
     }
     // For default variant, use theme-aware logic
     if (!mounted) {
@@ -59,7 +59,7 @@ export function Logo({
     // Fixed logic: dark theme should use light logo, light theme should use dark logo
     return resolvedTheme === "dark"
       ? "/main-logo-dark.png"
-      : "/main-logo-light.png";
+      : "/main-logo-dark.png";
   };
 
   const getTextClasses = () => {

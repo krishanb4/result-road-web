@@ -155,8 +155,12 @@ service cloud.firestore {
       allow read, write: if userExists() && isAdmin();
     }
 
-    // Care plans collection
+    // Care plans collection - FIXED
     match /carePlans/{carePlanId} {
+      // CRITICAL: Allow participants to create their own care plan during registration
+      allow create: if isAuthenticated() && request.auth.uid == carePlanId &&
+        request.resource.data.participantId == request.auth.uid;
+      
       // Participants can read their own care plans
       allow read: if userExists() && isParticipant() && 
         resource.data.keys().hasAny(['participantId']) &&
