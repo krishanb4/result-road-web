@@ -1,314 +1,270 @@
+// app/dashboard/page.tsx
 "use client";
 
+import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
-import { GlassCard } from "@/components/ui/GlassCard";
 import {
-  Users,
-  Calendar,
-  TrendingUp,
-  Activity,
-  Target,
-  BookOpen,
-  Building,
-  UserCheck,
-} from "lucide-react";
+  collection,
+  getCountFromServer,
+  query,
+  where,
+  Timestamp,
+} from "firebase/firestore";
+import { db } from "@/lib/firebase";
+import Link from "next/link";
 
-// Mock data - in a real app, this would come from Firestore
-const mockData = {
-  admin: {
-    stats: [
-      { label: "Total Users", value: "247", icon: Users, change: "+12%" },
-      { label: "Active Programs", value: "15", icon: BookOpen, change: "+5%" },
-      {
-        label: "Sessions This Week",
-        value: "42",
-        icon: Calendar,
-        change: "+8%",
-      },
-      { label: "Facilities", value: "8", icon: Building, change: "+2%" },
-    ],
-    recentActivity: [
-      "New participant John Smith joined",
-      'Program "Strength Building" completed',
-      "Instructor Sarah assigned to new facility",
-      "Weekly progress reports generated",
-    ],
-  },
-  participant: {
-    stats: [
-      { label: "Programs Joined", value: "3", icon: BookOpen, change: "+1" },
-      {
-        label: "Sessions Completed",
-        value: "24",
-        icon: Calendar,
-        change: "+3",
-      },
-      {
-        label: "Progress Score",
-        value: "78%",
-        icon: TrendingUp,
-        change: "+5%",
-      },
-      { label: "Goals Achieved", value: "5", icon: Target, change: "+2" },
-    ],
-    recentActivity: [
-      "Completed strength training session",
-      "New goal: Improve coordination",
-      "Progress update from instructor",
-      "Next session scheduled for tomorrow",
-    ],
-  },
-  instructor: {
-    stats: [
-      { label: "Active Participants", value: "18", icon: Users, change: "+3" },
-      {
-        label: "Sessions This Week",
-        value: "12",
-        icon: Calendar,
-        change: "+2",
-      },
-      { label: "Programs Teaching", value: "4", icon: BookOpen, change: "+1" },
-      {
-        label: "Avg Progress Rate",
-        value: "85%",
-        icon: TrendingUp,
-        change: "+7%",
-      },
-    ],
-    recentActivity: [
-      "Updated progress for Maria Garcia",
-      "New participant assigned: Alex Chen",
-      "Session feedback submitted",
-      "Weekly planning meeting scheduled",
-    ],
-  },
-  fitness_partner: {
-    stats: [
-      { label: "Facilities Managed", value: "3", icon: Building, change: "+0" },
-      {
-        label: "Active Instructors",
-        value: "7",
-        icon: UserCheck,
-        change: "+1",
-      },
-      {
-        label: "Monthly Sessions",
-        value: "156",
-        icon: Calendar,
-        change: "+12",
-      },
-      {
-        label: "Capacity Utilization",
-        value: "78%",
-        icon: Activity,
-        change: "+5%",
-      },
-    ],
-    recentActivity: [
-      "New instructor onboarded",
-      "Equipment maintenance completed",
-      "Facility capacity updated",
-      "Monthly report submitted",
-    ],
-  },
-  service_provider: {
-    stats: [
-      { label: "Active Clients", value: "32", icon: Users, change: "+4" },
-      { label: "Support Workers", value: "12", icon: UserCheck, change: "+1" },
-      { label: "Care Plans", value: "28", icon: BookOpen, change: "+3" },
-      { label: "This Month Goals", value: "89%", icon: Target, change: "+6%" },
-    ],
-    recentActivity: [
-      "Care plan updated for client",
-      "New support worker assigned",
-      "Monthly review completed",
-      "Goal achievement celebrated",
-    ],
-  },
-  support_worker: {
-    stats: [
-      { label: "Assigned Clients", value: "8", icon: Users, change: "+1" },
-      {
-        label: "Sessions This Week",
-        value: "16",
-        icon: Calendar,
-        change: "+2",
-      },
-      { label: "Support Hours", value: "42", icon: Activity, change: "+8" },
-      {
-        label: "Client Satisfaction",
-        value: "94%",
-        icon: TrendingUp,
-        change: "+2%",
-      },
-    ],
-    recentActivity: [
-      "Session support provided to Tom",
-      "Progress notes updated",
-      "Weekly check-in completed",
-      "Training session attended",
-    ],
-  },
+type Counts = {
+  users: {
+    total: number;
+    admin: number;
+    participant: number;
+    support_worker: number;
+    fitness_partner: number;
+    service_provider: number;
+    instructor: number;
+  };
+  programs: number;
+  forms: {
+    total: number;
+    completed: number;
+    pending_review: number;
+    in_review: number;
+    overdue: number;
+    thisWeek: number;
+  };
 };
 
-export default function DashboardPage() {
+export default function DashboardIndex() {
+  const router = useRouter();
   const { userProfile } = useAuth();
+  const [counts, setCounts] = useState<Counts | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  // If not logged in yet, show nothing (your layout likely guards auth anyway)
+  useEffect(() => {
+    if (!userProfile) return;
+    // Non-admins → send to their role landing
+    if (userProfile.role !== "admin") {
+      const landing: Record<string, string> = {
+        participant: "/dashboard/participant",
+        support_worker: "/dashboard/support-worker",
+        fitness_partner: "/dashboard/fitness-partner",
+        service_provider: "/dashboard/service-provider",
+        instructor: "/dashboard/instructor",
+        admin: "/dashboard/admin", // admins handled below
+      };
+      router.replace(landing[userProfile.role] ?? "/dashboard/participant");
+    }
+  }, [userProfile, router]);
+
+  const startOfWeek = useMemo(() => {
+    // ISO week start (Mon 00:00) for "this week" form counts
+    const now = new Date();
+    const day = (now.getDay() + 6) % 7; // 0..6 with Monday=0
+    const monday = new Date(now);
+    monday.setHours(0, 0, 0, 0);
+    monday.setDate(now.getDate() - day);
+    return Timestamp.fromDate(monday);
+  }, []);
+
+  useEffect(() => {
+    if (!userProfile || userProfile.role !== "admin") return;
+
+    (async () => {
+      setLoading(true);
+
+      // USERS
+      const usersCol = collection(db, "users");
+      const totalUsers = await getCountFromServer(usersCol);
+      const adminUsers = await getCountFromServer(
+        query(usersCol, where("role", "==", "admin"))
+      );
+      const participants = await getCountFromServer(
+        query(usersCol, where("role", "==", "participant"))
+      );
+      const supportWorkers = await getCountFromServer(
+        query(usersCol, where("role", "==", "support_worker"))
+      );
+      const fitnessPartners = await getCountFromServer(
+        query(usersCol, where("role", "==", "fitness_partner"))
+      );
+      const serviceProviders = await getCountFromServer(
+        query(usersCol, where("role", "==", "service_provider"))
+      );
+      const instructors = await getCountFromServer(
+        query(usersCol, where("role", "==", "instructor"))
+      );
+
+      // PROGRAMS
+      const programsCol = collection(db, "programs");
+      const totalPrograms = await getCountFromServer(programsCol);
+
+      // FORMS (submissions)
+      const formsCol = collection(db, "forms");
+      const totalForms = await getCountFromServer(formsCol);
+      const completed = await getCountFromServer(
+        query(formsCol, where("status", "==", "completed"))
+      );
+      const pendingReview = await getCountFromServer(
+        query(formsCol, where("status", "==", "pending_review"))
+      );
+      const inReview = await getCountFromServer(
+        query(formsCol, where("status", "==", "in_review"))
+      );
+      const overdue = await getCountFromServer(
+        query(formsCol, where("status", "==", "overdue"))
+      );
+      // this week: submissionDate >= Monday 00:00
+      const thisWeek = await getCountFromServer(
+        query(formsCol, where("submissionDate", ">=", startOfWeek))
+      );
+
+      setCounts({
+        users: {
+          total: totalUsers.data().count,
+          admin: adminUsers.data().count,
+          participant: participants.data().count,
+          support_worker: supportWorkers.data().count,
+          fitness_partner: fitnessPartners.data().count,
+          service_provider: serviceProviders.data().count,
+          instructor: instructors.data().count,
+        },
+        programs: totalPrograms.data().count,
+        forms: {
+          total: totalForms.data().count,
+          completed: completed.data().count,
+          pending_review: pendingReview.data().count,
+          in_review: inReview.data().count,
+          overdue: overdue.data().count,
+          thisWeek: thisWeek.data().count,
+        },
+      });
+
+      setLoading(false);
+    })();
+  }, [userProfile, startOfWeek]);
 
   if (!userProfile) return null;
-
-  const data = mockData[userProfile.role] || mockData.participant;
-  const roleName = userProfile.role
-    .replace("_", " ")
-    .replace(/\b\w/g, (l) => l.toUpperCase());
+  if (userProfile.role !== "admin") return null;
 
   return (
-    <div className="space-y-8">
-      {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-4xl font-bold text-slate-900 dark:text-white mb-2 transition-colors duration-300">
-          Welcome back, {userProfile.displayName || "User"}!
-        </h1>
-        <p className="text-slate-600 dark:text-slate-300 text-lg transition-colors duration-300">
-          {roleName} Dashboard - Here's what's happening today
+    <div className="p-6 space-y-6">
+      <div>
+        <h1 className="text-2xl font-semibold">Admin Overview</h1>
+        <p className="text-slate-600">
+          Key stats across users, programs, and forms.
         </p>
       </div>
 
-      {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {data.stats.map((stat, index) => {
-          const Icon = stat.icon;
-          return (
-            <div
-              key={index}
-              className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm border border-slate-200/50 dark:border-slate-700/50 p-6 rounded-xl shadow-sm hover:shadow-md transition-all duration-300 hover:scale-105"
-            >
-              <div className="flex items-start justify-between">
-                <div>
-                  <p className="text-slate-600 dark:text-slate-400 text-sm font-medium transition-colors duration-300">
-                    {stat.label}
-                  </p>
-                  <p className="text-3xl font-bold text-slate-900 dark:text-white mt-2 transition-colors duration-300">
-                    {stat.value}
-                  </p>
-                  <p className="text-emerald-600 dark:text-emerald-400 text-sm mt-1 transition-colors duration-300">
-                    {stat.change}
-                  </p>
-                </div>
-                <div className="bg-slate-100 dark:bg-slate-700 p-3 rounded-lg transition-colors duration-300">
-                  <Icon className="w-6 h-6 text-emerald-600 dark:text-emerald-400 transition-colors duration-300" />
-                </div>
-              </div>
-            </div>
-          );
-        })}
-      </div>
+      {loading || !counts ? (
+        <div className="rounded-xl border p-6">Loading stats…</div>
+      ) : (
+        <>
+          {/* Users */}
+          <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <StatCard
+              title="Total Users"
+              value={counts.users.total}
+              href="/admin/users"
+            />
+            <StatCard title="Participants" value={counts.users.participant} />
+            <StatCard
+              title="Support Workers"
+              value={counts.users.support_worker}
+            />
+            <StatCard
+              title="Service Providers"
+              value={counts.users.service_provider}
+            />
+            <StatCard
+              title="Fitness Partners"
+              value={counts.users.fitness_partner}
+            />
+            <StatCard title="Instructors" value={counts.users.instructor} />
+            <StatCard title="Admins" value={counts.users.admin} />
+            <StatCard
+              title="Programs"
+              value={counts.programs}
+              href="/dashboard/programs"
+            />
+          </section>
 
-      {/* Main Content Grid */}
-      <div className="grid lg:grid-cols-3 gap-8">
-        {/* Recent Activity */}
-        <div className="lg:col-span-2">
-          <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm border border-slate-200/50 dark:border-slate-700/50 p-6 rounded-xl shadow-sm transition-all duration-300">
-            <h3 className="text-xl font-semibold text-slate-900 dark:text-white mb-6 transition-colors duration-300">
-              Recent Activity
-            </h3>
-            <div className="space-y-4">
-              {data.recentActivity.map((activity, index) => (
-                <div
-                  key={index}
-                  className="flex items-center space-x-4 p-4 bg-slate-50 dark:bg-slate-700 rounded-lg transition-colors duration-300"
-                >
-                  <div className="w-2 h-2 bg-emerald-500 dark:bg-emerald-400 rounded-full transition-colors duration-300"></div>
-                  <p className="text-slate-700 dark:text-slate-200 flex-1 transition-colors duration-300">
-                    {activity}
-                  </p>
-                  <span className="text-slate-500 dark:text-slate-400 text-sm transition-colors duration-300">
-                    {Math.floor(Math.random() * 24)} hours ago
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
+          {/* Forms */}
+          <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <StatCard
+              title="All Submissions"
+              value={counts.forms.total}
+              href="/dashboard/admin/forms"
+            />
+            <StatCard title="This Week" value={counts.forms.thisWeek} />
+            <StatCard title="Completed" value={counts.forms.completed} />
+            <StatCard
+              title="Pending Review"
+              value={counts.forms.pending_review}
+            />
+            <StatCard title="In Review" value={counts.forms.in_review} />
+            <StatCard title="Overdue" value={counts.forms.overdue} />
+          </section>
 
-        {/* Quick Actions */}
-        <div>
-          <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm border border-slate-200/50 dark:border-slate-700/50 p-6 rounded-xl shadow-sm transition-all duration-300">
-            <h3 className="text-xl font-semibold text-slate-900 dark:text-white mb-6 transition-colors duration-300">
-              Quick Actions
-            </h3>
-            <div className="space-y-3">
-              {getQuickActions(userProfile.role).map((action, index) => (
-                <button
-                  key={index}
-                  className="w-full text-left p-4 bg-slate-50 dark:bg-slate-700 hover:bg-slate-100 dark:hover:bg-slate-600 rounded-lg transition-all duration-300"
-                >
-                  <div className="flex items-center space-x-3">
-                    <action.icon className="w-5 h-5 text-emerald-600 dark:text-emerald-400 transition-colors duration-300" />
-                    <span className="text-slate-700 dark:text-slate-200 transition-colors duration-300">
-                      {action.label}
-                    </span>
-                  </div>
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Progress Chart Placeholder */}
-      <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm border border-slate-200/50 dark:border-slate-700/50 p-6 rounded-xl shadow-sm transition-all duration-300">
-        <h3 className="text-xl font-semibold text-slate-900 dark:text-white mb-6 transition-colors duration-300">
-          Progress Overview
-        </h3>
-        <div className="h-64 bg-slate-50 dark:bg-slate-700 rounded-lg flex items-center justify-center transition-colors duration-300">
-          <p className="text-slate-500 dark:text-slate-400 transition-colors duration-300">
-            Chart visualization would go here
-          </p>
-        </div>
-      </div>
+          {/* Quick links */}
+          <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <QuickLink
+              href="/dashboard/admin/forms"
+              title="Review Forms"
+              desc="Filter by role, type, status"
+            />
+            <QuickLink
+              href="/admin/users"
+              title="Manage Users"
+              desc="Roles, activation"
+            />
+            <QuickLink
+              href="/dashboard/programs"
+              title="Programs"
+              desc="Create & assign programs"
+            />
+          </section>
+        </>
+      )}
     </div>
   );
 }
 
-function getQuickActions(role: string) {
-  const actions = {
-    admin: [
-      { label: "Add New User", icon: Users },
-      { label: "Create Program", icon: BookOpen },
-      { label: "View Analytics", icon: TrendingUp },
-      { label: "System Settings", icon: UserCheck },
-    ],
-    participant: [
-      { label: "View My Programs", icon: BookOpen },
-      { label: "Check Schedule", icon: Calendar },
-      { label: "Update Goals", icon: Target },
-      { label: "View Progress", icon: TrendingUp },
-    ],
-    instructor: [
-      { label: "Plan Session", icon: Calendar },
-      { label: "Update Progress", icon: TrendingUp },
-      { label: "View Participants", icon: Users },
-      { label: "Submit Report", icon: BookOpen },
-    ],
-    fitness_partner: [
-      { label: "Manage Facilities", icon: Building },
-      { label: "Add Instructor", icon: UserCheck },
-      { label: "View Bookings", icon: Calendar },
-      { label: "Update Resources", icon: Activity },
-    ],
-    service_provider: [
-      { label: "Manage Clients", icon: Users },
-      { label: "Review Care Plans", icon: BookOpen },
-      { label: "Assign Staff", icon: UserCheck },
-      { label: "Generate Reports", icon: TrendingUp },
-    ],
-    support_worker: [
-      { label: "View My Clients", icon: Users },
-      { label: "Update Notes", icon: BookOpen },
-      { label: "Schedule Support", icon: Calendar },
-      { label: "Track Progress", icon: TrendingUp },
-    ],
-  };
+function StatCard({
+  title,
+  value,
+  href,
+}: {
+  title: string;
+  value: number;
+  href?: string;
+}) {
+  const content = (
+    <div className="rounded-xl border p-4 hover:bg-slate-50 dark:hover:bg-slate-800 transition">
+      <div className="text-sm text-slate-500">{title}</div>
+      <div className="text-2xl font-semibold">{value}</div>
+    </div>
+  );
+  return href ? <Link href={href}>{content}</Link> : content;
+}
 
-  return actions[role as keyof typeof actions] || actions.participant;
+function QuickLink({
+  href,
+  title,
+  desc,
+}: {
+  href: string;
+  title: string;
+  desc: string;
+}) {
+  return (
+    <Link
+      href={href}
+      className="rounded-xl border p-4 hover:bg-slate-50 dark:hover:bg-slate-800 transition block"
+    >
+      <div className="font-medium">{title}</div>
+      <div className="text-sm text-slate-500">{desc}</div>
+    </Link>
+  );
 }
