@@ -246,6 +246,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Create user profile in Firestore
       const profile = await createUserProfile(result.user, role, displayName);
       setUserProfile(profile);
+      if (typeof document !== "undefined" && profile?.role) {
+        document.cookie = `role=${profile.role}; path=/; max-age=86400; samesite=lax`;
+      }
 
       console.log("User signed up successfully:", result.user.uid);
     } catch (error: any) {

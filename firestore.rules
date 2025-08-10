@@ -1,232 +1,300 @@
 rules_version = '2';
+
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Helper function to check if user is authenticated
+
+    // ---------- Auth & role helpers ----------
     function isAuthenticated() {
       return request.auth != null;
     }
-    
-    // Helper function to get user role (with better error handling)
+
+    // Prefer custom claim (request.auth.token.role). Fallback to /users doc.role if present.
     function getUserRole() {
-      return isAuthenticated() && 
-        exists(/databases/$(database)/documents/users/$(request.auth.uid)) ? 
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role : 
-        null;
+      return isAuthenticated()
+        ? (request.auth.token.role != null
+            ? request.auth.token.role
+            : (exists(/databases/$(database)/documents/users/$(request.auth.uid))
+                ? get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role
+                : null))
+        : null;
     }
-    
-    // Helper function to check if user exists in users collection
+
     function userExists() {
-      return isAuthenticated() && 
-        exists(/databases/$(database)/documents/users/$(request.auth.uid));
-    }
-    
-    // Helper function to check if user is admin
-    function isAdmin() {
-      return getUserRole() == 'admin';
-    }
-    
-    // Helper function to check if user is instructor
-    function isInstructor() {
-      return getUserRole() == 'instructor';
-    }
-    
-    // Helper function to check if user is participant
-    function isParticipant() {
-      return getUserRole() == 'participant';
-    }
-    
-    // Helper function to check if user is support worker
-    function isSupportWorker() {
-      return getUserRole() == 'support_worker';
-    }
-    
-    // Helper function to check if user is service provider
-    function isServiceProvider() {
-      return getUserRole() == 'service_provider';
-    }
-    
-    // Helper function to check if user is fitness partner
-    function isFitnessPartner() {
-      return getUserRole() == 'fitness_partner';
+      return isAuthenticated()
+        && exists(/databases/$(database)/documents/users/$(request.auth.uid));
     }
 
-    // Users collection
+    function isAdmin()           { return getUserRole() == 'admin'; }
+    function isInstructor()      { return getUserRole() == 'instructor'; }
+    function isParticipant()     { return getUserRole() == 'participant'; }
+    function isSupportWorker()   { return getUserRole() == 'support_worker'; }
+    function isServiceProvider() { return getUserRole() == 'service_provider'; }
+    function isFitnessPartner()  { return getUserRole() == 'fitness_partner'; }
+
+    // ---------- USERS ----------
     match /users/{userId} {
-      // CRITICAL: Allow initial user creation for authenticated users
+      // Create: allow the signed-in user to create their own profile (first write).
       allow create: if isAuthenticated() && request.auth.uid == userId;
-      
-      // Users can read and write their own profile
-      allow read, write: if isAuthenticated() && request.auth.uid == userId;
-      
-      // Admins can read all user profiles (only if admin user exists)
-      allow read: if userExists() && isAdmin();
-      
-      // Service providers can read their assigned participants and support workers
-      allow read: if userExists() && isServiceProvider() && 
-        (resource.data.keys().hasAny(['serviceProviderId']) && 
-         resource.data.serviceProviderId == request.auth.uid || 
-         resource.data.role == 'support_worker');
-      
-      // Support workers can read their assigned participants
-      allow read: if userExists() && isSupportWorker() && 
-        resource.data.keys().hasAny(['supportWorkerId']) &&
-        resource.data.supportWorkerId == request.auth.uid;
-      
-      // Instructors can read participants in their programs
-      allow read: if userExists() && isInstructor() && resource.data.role == 'participant';
-      
-      // Fitness partners can read instructors at their facilities
-      allow read: if userExists() && isFitnessPartner() && resource.data.role == 'instructor';
+
+      // Read: user can read own profile; admin can read all.
+      allow read: if (isAuthenticated() && request.auth.uid == userId) || isAdmin();
+
+      // Update: user can update own profile; admin can update all.
+      allow update: if (isAuthenticated() && request.auth.uid == userId) || isAdmin();
+
+      // Delete: admins only.
+      allow delete: if isAdmin();
     }
 
-    // Programs collection
+    // ---------- PROGRAMS ----------
+    // (Optionally include assignedTo: [uid] to gate participant access)
     match /programs/{programId} {
-      // All authenticated users can read programs
+      // Read: signed-in users can read. If you need stricter gating, limit to assignedTo or admins.
       allow read: if isAuthenticated();
-      
-      // Admins and instructors can create and update programs
+
+      // Create/Update: admins and instructors.
       allow create, update: if userExists() && (isAdmin() || isInstructor());
-      
-      // Only admins can delete programs
+
+      // Delete: admins only.
       allow delete: if userExists() && isAdmin();
     }
 
-    // Sessions collection
+    // ---------- SESSIONS ----------
+    // Expected fields (suggested): { instructorId, ... }
     match /sessions/{sessionId} {
-      // All authenticated users can read sessions
+      // Read: any signed-in user
       allow read: if isAuthenticated();
-      
-      // Admins and instructors can create and update sessions
-      allow create, update: if userExists() && (isAdmin() || isInstructor());
-      
-      // Instructors can only update sessions they're assigned to
-      allow update: if userExists() && isInstructor() && 
-        resource.data.keys().hasAny(['instructorId']) &&
-        resource.data.instructorId == request.auth.uid;
-      
-      // Only admins can delete sessions
+
+      // Create: admin or instructor
+      allow create: if userExists() && (isAdmin() || isInstructor());
+
+      // Update: admin, OR the assigned instructor
+      allow update: if userExists() && (
+        isAdmin() ||
+        (isInstructor() &&
+         resource.data.keys().hasAny(['instructorId']) &&
+         resource.data.instructorId == request.auth.uid)
+      );
+
+      // Delete: admins only
       allow delete: if userExists() && isAdmin();
     }
 
-    // Facilities collection
+    // ---------- FACILITIES ----------
+    // Expected fields (suggested): { partnerId, ... }
     match /facilities/{facilityId} {
-      // All authenticated users can read facilities
+      // Read: any signed-in user
       allow read: if isAuthenticated();
-      
-      // Admins and fitness partners can create and update facilities
-      allow create, update: if userExists() && (isAdmin() || isFitnessPartner());
-      
-      // Fitness partners can only update their own facilities
-      allow update: if userExists() && isFitnessPartner() && 
-        resource.data.keys().hasAny(['partnerId']) &&
-        resource.data.partnerId == request.auth.uid;
-      
-      // Only admins can delete facilities
+
+      // Create/Update: admin or fitness partner (own facilities only)
+      allow create: if userExists() && (isAdmin() || isFitnessPartner());
+      allow update: if userExists() && (
+        isAdmin() ||
+        (isFitnessPartner() &&
+         resource.data.keys().hasAny(['partnerId']) &&
+         resource.data.partnerId == request.auth.uid)
+      );
+
+      // Delete: admins only
       allow delete: if userExists() && isAdmin();
     }
 
-    // Progress collection
+    // ---------- PROGRESS ----------
+    // Expected fields: { participantId, instructorId, ... }
     match /progress/{progressId} {
-      // Participants can read their own progress
-      allow read: if userExists() && isParticipant() && 
-        resource.data.keys().hasAny(['participantId']) &&
-        resource.data.participantId == request.auth.uid;
-      
-      // Instructors can read and write progress for their students
-      allow read, write: if userExists() && isInstructor() && 
-        resource.data.keys().hasAny(['instructorId']) &&
-        resource.data.instructorId == request.auth.uid;
-      
-      // Support workers can read progress for their assigned participants
-      allow read: if userExists() && isSupportWorker() && 
-        resource.data.keys().hasAny(['participantId']) &&
-        exists(/databases/$(database)/documents/users/$(resource.data.participantId)) &&
-        get(/databases/$(database)/documents/users/$(resource.data.participantId)).data.keys().hasAny(['supportWorkerId']) &&
-        get(/databases/$(database)/documents/users/$(resource.data.participantId)).data.supportWorkerId == request.auth.uid;
-      
-      // Service providers can read progress for their participants
-      allow read: if userExists() && isServiceProvider() && 
-        resource.data.keys().hasAny(['participantId']) &&
-        exists(/databases/$(database)/documents/users/$(resource.data.participantId)) &&
-        get(/databases/$(database)/documents/users/$(resource.data.participantId)).data.keys().hasAny(['serviceProviderId']) &&
-        get(/databases/$(database)/documents/users/$(resource.data.participantId)).data.serviceProviderId == request.auth.uid;
-      
-      // Admins can read and write all progress
-      allow read, write: if userExists() && isAdmin();
+      allow read: if userExists() && (
+        // participant can read own progress
+        (isParticipant() &&
+         resource.data.keys().hasAny(['participantId']) &&
+         resource.data.participantId == request.auth.uid) ||
+
+        // instructor can read progress they own
+        (isInstructor() &&
+         resource.data.keys().hasAny(['instructorId']) &&
+         resource.data.instructorId == request.auth.uid) ||
+
+        // support worker can read if assigned to that participant (via users/{participant}.supportWorkerId)
+        (isSupportWorker() &&
+         resource.data.keys().hasAny(['participantId']) &&
+         exists(/databases/$(database)/documents/users/$(resource.data.participantId)) &&
+         get(/databases/$(database)/documents/users/$(resource.data.participantId)).data.keys().hasAny(['supportWorkerId']) &&
+         get(/databases/$(database)/documents/users/$(resource.data.participantId)).data.supportWorkerId == request.auth.uid) ||
+
+        // service provider can read if linked to that participant
+        (isServiceProvider() &&
+         resource.data.keys().hasAny(['participantId']) &&
+         exists(/databases/$(database)/documents/users/$(resource.data.participantId)) &&
+         get(/databases/$(database)/documents/users/$(resource.data.participantId)).data.keys().hasAny(['serviceProviderId']) &&
+         get(/databases/$(database)/documents/users/$(resource.data.participantId)).data.serviceProviderId == request.auth.uid) ||
+
+        // admin can read all
+        isAdmin()
+      );
+
+      // Write: instructor can write their own records; admin can write all
+      allow create, update: if userExists() && (
+        isAdmin() ||
+        (isInstructor() &&
+         request.resource.data.keys().hasAny(['instructorId']) &&
+         request.resource.data.instructorId == request.auth.uid)
+      );
+
+      // Delete: admins only
+      allow delete: if userExists() && isAdmin();
     }
 
-    // Care plans collection - FIXED
+    // ---------- CARE PLANS ----------
+    // Expected fields: { participantId, serviceProviderId?, supportWorkerId? }
     match /carePlans/{carePlanId} {
-      // CRITICAL: Allow participants to create their own care plan during registration
-      allow create: if isAuthenticated() && request.auth.uid == carePlanId &&
-        request.resource.data.participantId == request.auth.uid;
-      
-      // Participants can read their own care plans
-      allow read: if userExists() && isParticipant() && 
-        resource.data.keys().hasAny(['participantId']) &&
-        resource.data.participantId == request.auth.uid;
-      
-      // Service providers can read and write care plans for their participants
-      allow read, write: if userExists() && isServiceProvider() && 
-        resource.data.keys().hasAny(['serviceProviderId']) &&
-        resource.data.serviceProviderId == request.auth.uid;
-      
-      // Support workers can read care plans for their assigned participants
-      allow read: if userExists() && isSupportWorker() && 
-        resource.data.keys().hasAny(['supportWorkerId']) &&
-        resource.data.supportWorkerId == request.auth.uid;
-      
-      // Admins can read and write all care plans
-      allow read, write: if userExists() && isAdmin();
+      // Create: participant can create their own care plan at onboarding
+      allow create: if isAuthenticated()
+                    && request.auth.uid == carePlanId
+                    && request.resource.data.participantId == request.auth.uid;
+
+      allow read: if userExists() && (
+        // participant can read own
+        (isParticipant() &&
+         resource.data.keys().hasAny(['participantId']) &&
+         resource.data.participantId == request.auth.uid) ||
+
+        // service provider can read/write for their participant
+        (isServiceProvider() &&
+         resource.data.keys().hasAny(['serviceProviderId']) &&
+         resource.data.serviceProviderId == request.auth.uid) ||
+
+        // support worker can read for assigned participant
+        (isSupportWorker() &&
+         resource.data.keys().hasAny(['supportWorkerId']) &&
+         resource.data.supportWorkerId == request.auth.uid) ||
+
+        // admin can read all
+        isAdmin()
+      );
+
+      // Write (update): service provider managing their participant OR admin
+      allow update: if userExists() && (
+        isAdmin() ||
+        (isServiceProvider() &&
+         resource.data.keys().hasAny(['serviceProviderId']) &&
+         resource.data.serviceProviderId == request.auth.uid)
+      );
+
+      // Delete: admins only
+      allow delete: if userExists() && isAdmin();
     }
 
-    // Assignments collection
+    // ---------- ASSIGNMENTS ----------
+    // Expected fields: some of { participantId, instructorId, supportWorkerId, serviceProviderId }
     match /assignments/{assignmentId} {
-      // Users can read assignments that involve them
-      allow read: if isAuthenticated() && 
-        (resource.data.keys().hasAny(['participantId']) && resource.data.participantId == request.auth.uid ||
-         resource.data.keys().hasAny(['instructorId']) && resource.data.instructorId == request.auth.uid ||
-         resource.data.keys().hasAny(['supportWorkerId']) && resource.data.supportWorkerId == request.auth.uid ||
-         resource.data.keys().hasAny(['serviceProviderId']) && resource.data.serviceProviderId == request.auth.uid);
-      
-      // Admins, service providers, and instructors can create and update assignments
+      // Read if the user is involved in the assignment or admin
+      allow read: if isAuthenticated() && (
+        (resource.data.keys().hasAny(['participantId'])     && resource.data.participantId     == request.auth.uid) ||
+        (resource.data.keys().hasAny(['instructorId'])      && resource.data.instructorId      == request.auth.uid) ||
+        (resource.data.keys().hasAny(['supportWorkerId'])   && resource.data.supportWorkerId   == request.auth.uid) ||
+        (resource.data.keys().hasAny(['serviceProviderId']) && resource.data.serviceProviderId == request.auth.uid) ||
+        isAdmin()
+      );
+
+      // Create/Update: admin, service provider, or instructor
       allow create, update: if userExists() && (isAdmin() || isServiceProvider() || isInstructor());
-      
-      // Only admins and service providers can delete assignments
+
+      // Delete: admin or service provider
       allow delete: if userExists() && (isAdmin() || isServiceProvider());
     }
 
-    // Notifications collection
+    // ---------- NOTIFICATIONS ----------
+    // Expected fields: { userId, read, readAt, ... }
     match /notifications/{notificationId} {
-      // Users can read their own notifications
-      allow read: if isAuthenticated() && 
-        resource.data.keys().hasAny(['userId']) &&
-        resource.data.userId == request.auth.uid;
-      
-      // Users can mark their own notifications as read
-      allow update: if isAuthenticated() && 
-        resource.data.keys().hasAny(['userId']) &&
-        resource.data.userId == request.auth.uid &&
-        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['read', 'readAt']);
-      
-      // System can create notifications for users
+      // Read own notifications
+      allow read: if isAuthenticated()
+                  && resource.data.keys().hasAny(['userId'])
+                  && resource.data.userId == request.auth.uid;
+
+      // Update: user can only toggle read/readAt
+      allow update: if isAuthenticated()
+                    && resource.data.keys().hasAny(['userId'])
+                    && resource.data.userId == request.auth.uid
+                    && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['read','readAt']);
+
+      // Create (system or server writes): require auth; typically done via Cloud Functions with admin privileges
       allow create: if isAuthenticated();
     }
 
-    // Reports collection
+    // ---------- REPORTS ----------
+    // Expected fields: { serviceProviderId?, instructorId?, ... }
     match /reports/{reportId} {
-      // Admins can read all reports
-      allow read, write: if userExists() && isAdmin();
-      
-      // Service providers can read reports for their participants
-      allow read: if userExists() && isServiceProvider() && 
-        resource.data.keys().hasAny(['serviceProviderId']) &&
-        resource.data.serviceProviderId == request.auth.uid;
-      
-      // Instructors can create and read reports for their sessions
-      allow read, create: if userExists() && isInstructor() && 
-        resource.data.keys().hasAny(['instructorId']) &&
-        resource.data.instructorId == request.auth.uid;
+      allow read: if userExists() && (
+        isAdmin() ||
+        (isServiceProvider() &&
+         resource.data.keys().hasAny(['serviceProviderId']) &&
+         resource.data.serviceProviderId == request.auth.uid) ||
+        (isInstructor() &&
+         resource.data.keys().hasAny(['instructorId']) &&
+         resource.data.instructorId == request.auth.uid)
+      );
+
+      // Create: admin or instructor (for their sessions)
+      allow create: if userExists() && (
+        isAdmin() ||
+        (isInstructor() &&
+         request.resource.data.keys().hasAny(['instructorId']) &&
+         request.resource.data.instructorId == request.auth.uid)
+      );
+
+      // Update/Delete: admins only
+      allow update, delete: if userExists() && isAdmin();
+    }
+
+    // ---------- FORMS (added for dashboard submissions) ----------
+    // Single flat collection `forms` where each role submits:
+    // Required fields (suggested):
+    // { type: 'Client Management Form'|'Group Management Form'|'Feedback Form'|'Progress Overview'|'Training Program',
+    //   role: 'support_worker'|'fitness_partner'|'service_provider'|'instructor'|'participant',
+    //   submittedByUid, submittedByName, status: 'completed'|'pending_review'|'in_review'|'overdue', submissionDate: timestamp, ...payload }
+    function validForm() {
+      return request.resource.data.keys().hasAll([
+        'type','role','submittedByUid','submittedByName','status','submissionDate'
+      ])
+      && request.resource.data.type in [
+        'Client Management Form','Group Management Form','Feedback Form','Progress Overview','Training Program'
+      ]
+      && request.resource.data.role in [
+        'participant','support_worker','fitness_partner','service_provider','instructor'
+      ]
+      && request.resource.data.status in ['completed','pending_review','in_review','overdue']
+      && request.resource.data.submittedByUid is string
+      && request.resource.data.submittedByName is string
+      && request.resource.data.submissionDate is timestamp;
+    }
+
+    function roleMatchesType() {
+      return
+        (isSupportWorker()   && request.resource.data.type == 'Client Management Form') ||
+        (isFitnessPartner()  && request.resource.data.type == 'Group Management Form') ||
+        (isServiceProvider() && request.resource.data.type == 'Feedback Form') ||
+        (isInstructor()      && request.resource.data.type == 'Progress Overview') ||
+        (isParticipant()     && request.resource.data.type == 'Training Program') ||
+        isAdmin();
+    }
+
+    match /forms/{formId} {
+      // Read: admin can read all; user can read only own
+      allow read: if isAdmin() ||
+                   (isAuthenticated() && resource.data.submittedByUid == request.auth.uid);
+
+      // Create: correct role + valid shape + owner is the requester
+      allow create: if isAuthenticated()
+                    && validForm()
+                    && roleMatchesType()
+                    && request.resource.data.submittedByUid == request.auth.uid;
+
+      // Update/Delete: admin only (for review workflows)
+      allow update, delete: if isAdmin();
+    }
+
+    // ---------- Default deny ----------
+    match /{document=**} {
+      allow read, write: if false;
     }
   }
 }

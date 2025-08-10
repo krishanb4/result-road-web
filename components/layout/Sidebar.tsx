@@ -7,58 +7,57 @@ import { useAuth } from "@/contexts/AuthContext";
 import {
   Home,
   Users,
-  Calendar,
   BarChart3,
-  Settings,
   LogOut,
-  Building,
   User,
   BookOpen,
+  FileText, // ✅ add
+  ClipboardList, // ✅ add
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { Logo } from "@/components/ui/Logo";
 import { useSeasonalColors } from "@/contexts/ThemeContext";
 
-const roleBasedNavigation = {
+export const roleBasedNavigation = {
   admin: [
-    { name: "Dashboard", href: "/dashboard", icon: Home },
-    { name: "Users", href: "/dashboard/users", icon: Users },
+    { name: "Dashboard", href: "/dashboard/admin", icon: Home },
+    { name: "Users", href: "/dashboard/admin/users", icon: Users },
+    { name: "Forms", href: "/dashboard/admin/forms", icon: FileText },
     { name: "Programs", href: "/dashboard/programs", icon: BookOpen },
-    { name: "Analytics", href: "/dashboard/analytics", icon: BarChart3 },
-    { name: "Settings", href: "/dashboard/settings", icon: Settings },
   ],
   participant: [
-    { name: "Dashboard", href: "/dashboard", icon: Home },
-    { name: "My Programs", href: "/dashboard/programs", icon: BookOpen },
-    { name: "Progress", href: "/dashboard/progress", icon: BarChart3 },
-    { name: "Schedule", href: "/dashboard/schedule", icon: Calendar },
-  ],
-  instructor: [
-    { name: "Dashboard", href: "/dashboard", icon: Home },
-    { name: "Sessions", href: "/dashboard/sessions", icon: Calendar },
-    { name: "Participants", href: "/dashboard/participants", icon: Users },
-    { name: "Progress", href: "/dashboard/progress", icon: BarChart3 },
-  ],
-  fitness_partner: [
-    { name: "Dashboard", href: "/dashboard", icon: Home },
-    { name: "Facilities", href: "/dashboard/facilities", icon: Building },
-    { name: "Instructors", href: "/dashboard/instructors", icon: User },
-    { name: "Programs", href: "/dashboard/programs", icon: BookOpen },
-  ],
-  service_provider: [
-    { name: "Dashboard", href: "/dashboard", icon: Home },
-    { name: "Clients", href: "/dashboard/clients", icon: Users },
-    { name: "Care Plans", href: "/dashboard/care-plans", icon: BookOpen },
-    { name: "Staff", href: "/dashboard/staff", icon: User },
+    {
+      name: "Training Program",
+      href: "/dashboard/participant",
+      icon: BookOpen,
+    },
   ],
   support_worker: [
-    { name: "Dashboard", href: "/dashboard", icon: Home },
-    { name: "My Clients", href: "/dashboard/clients", icon: Users },
-    { name: "Sessions", href: "/dashboard/sessions", icon: Calendar },
-    { name: "Progress", href: "/dashboard/progress", icon: BarChart3 },
+    {
+      name: "Weekly Client Form",
+      href: "/dashboard/support-worker",
+      icon: ClipboardList,
+    },
   ],
-};
+  fitness_partner: [
+    { name: "Group Feedback", href: "/dashboard/fitness-partner", icon: Users },
+  ],
+  service_provider: [
+    {
+      name: "Feedback Form",
+      href: "/dashboard/service-provider",
+      icon: FileText,
+    },
+  ],
+  instructor: [
+    {
+      name: "Progress Overview",
+      href: "/dashboard/instructor",
+      icon: BarChart3,
+    },
+  ],
+} as const;
 
 export function Sidebar() {
   const { userProfile, signOut } = useAuth();
@@ -67,7 +66,9 @@ export function Sidebar() {
 
   if (!userProfile) return null;
 
-  const navigation = roleBasedNavigation[userProfile.role] || [];
+  const navigation =
+    roleBasedNavigation[userProfile.role as keyof typeof roleBasedNavigation] ||
+    [];
 
   return (
     <div className="fixed left-0 top-0 h-screen w-64 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-700 shadow-lg z-40 transition-all duration-300">
@@ -80,8 +81,6 @@ export function Sidebar() {
           <p className="text-sm capitalize text-slate-500 dark:text-slate-400 mb-4">
             {userProfile.role.replace("_", " ")}
           </p>
-
-          {/* Theme Toggle in Sidebar */}
           <div className="flex justify-end">
             <ThemeToggle />
           </div>
@@ -92,7 +91,8 @@ export function Sidebar() {
           <ul className="space-y-2">
             {navigation.map((item) => {
               const Icon = item.icon;
-              const isActive = pathname === item.href;
+              const isActive =
+                pathname === item.href || pathname.startsWith(item.href + "/"); // better active state for nested routes
 
               return (
                 <li key={item.name}>
