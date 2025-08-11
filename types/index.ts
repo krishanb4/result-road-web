@@ -1,21 +1,8 @@
-export type UserRole = 'admin' | 'service_provider' | 'support_worker' | 'participant' | 'fitness_partner' | 'instructor';
-
 export interface User {
     uid: string;
     email: string;
     displayName?: string;
     role: UserRole;
-    createdAt: Date;
-    updatedAt: Date;
-}
-
-export interface Program {
-    id: string;
-    name: string;
-    description: string;
-    duration: number; // weeks
-    difficulty: 'easy' | 'moderate' | 'challenging';
-    createdBy: string; // instructor uid
     createdAt: Date;
     updatedAt: Date;
 }
@@ -90,4 +77,44 @@ export interface ProgressRecord {
         confidence: number;
     };
     createdAt: Date;
+}
+
+export type UserRole =
+    | "ADMIN"
+    | "PARTICIPANT"
+    | "SUPPORT_WORKER"
+    | "FITNESS_PARTNER"
+    | "SERVICE_PROVIDER"
+    | "COS";
+
+export type UserStatus = "active" | "inactive" | "pending";
+export interface UserProfile {
+    uid: string;
+    email: string;
+    displayName: string;
+    role: UserRole;
+    createdAt: any;
+    updatedAt: any;
+    status: UserStatus;
+    metadata?: {
+        lastLogin?: any;
+        preferences?: Record<string, any>;
+        settings?: Record<string, any>;
+    };
+}
+
+export interface Program {
+    id: string;
+    title: string;
+    description?: string;
+    videoKey?: string; // optional intro
+}
+
+export interface ProgramAssignment {
+    id: string;
+    participantUid: string;
+    programId: string;
+    startDate: string; // ISO
+    endDate: string;   // ISO
+    assignedBy: string; // admin uid
 }
