@@ -1,255 +1,94 @@
-// app/dashboard/page.tsx
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
-import { useAuth } from "@/contexts/AuthContext";
-import {
-  collection,
-  getCountFromServer,
-  query,
-  where,
-  Timestamp,
-} from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { useAuth, ROLE_DISPLAY_NAMES } from "@/contexts/AuthContext";
+import IntroVideo from "@/components/video/IntroVideo";
 import Link from "next/link";
 
-type Counts = {
-  users: {
-    total: number;
-    admin: number;
-    participant: number;
-    support_worker: number;
-    fitness_partner: number;
-    service_provider: number;
-    instructor: number;
-  };
-  programs: number;
-  forms: {
-    total: number;
-    completed: number;
-    pending_review: number;
-    in_review: number;
-    overdue: number;
-    thisWeek: number;
-  };
+const roleToVideoKey: Record<string, string> = {
+  admin: "admin",
+  participant: "participant",
+  support_worker: "support_worker",
+  fitness_partner: "fitness_partner",
+  service_provider: "service_provider",
+  instructor: "instructor",
 };
 
 export default function DashboardIndex() {
-  const router = useRouter();
   const { userProfile } = useAuth();
-  const [counts, setCounts] = useState<Counts | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  // If not logged in yet, show nothing (your layout likely guards auth anyway)
-  useEffect(() => {
-    if (!userProfile) return;
-    // Non-admins → send to their role landing
-    if (userProfile.role !== "admin") {
-      const landing: Record<string, string> = {
-        participant: "/dashboard/participant",
-        support_worker: "/dashboard/support-worker",
-        fitness_partner: "/dashboard/fitness-partner",
-        service_provider: "/dashboard/service-provider",
-        instructor: "/dashboard/instructor",
-        admin: "/dashboard/admin", // admins handled below
-      };
-      router.replace(landing[userProfile.role] ?? "/dashboard/participant");
-    }
-  }, [userProfile, router]);
-
-  const startOfWeek = useMemo(() => {
-    // ISO week start (Mon 00:00) for "this week" form counts
-    const now = new Date();
-    const day = (now.getDay() + 6) % 7; // 0..6 with Monday=0
-    const monday = new Date(now);
-    monday.setHours(0, 0, 0, 0);
-    monday.setDate(now.getDate() - day);
-    return Timestamp.fromDate(monday);
-  }, []);
-
-  useEffect(() => {
-    if (!userProfile || userProfile.role !== "admin") return;
-
-    (async () => {
-      setLoading(true);
-
-      // USERS
-      const usersCol = collection(db, "users");
-      const totalUsers = await getCountFromServer(usersCol);
-      const adminUsers = await getCountFromServer(
-        query(usersCol, where("role", "==", "admin"))
-      );
-      const participants = await getCountFromServer(
-        query(usersCol, where("role", "==", "participant"))
-      );
-      const supportWorkers = await getCountFromServer(
-        query(usersCol, where("role", "==", "support_worker"))
-      );
-      const fitnessPartners = await getCountFromServer(
-        query(usersCol, where("role", "==", "fitness_partner"))
-      );
-      const serviceProviders = await getCountFromServer(
-        query(usersCol, where("role", "==", "service_provider"))
-      );
-      const instructors = await getCountFromServer(
-        query(usersCol, where("role", "==", "instructor"))
-      );
-
-      // PROGRAMS
-      const programsCol = collection(db, "programs");
-      const totalPrograms = await getCountFromServer(programsCol);
-
-      // FORMS (submissions)
-      const formsCol = collection(db, "forms");
-      const totalForms = await getCountFromServer(formsCol);
-      const completed = await getCountFromServer(
-        query(formsCol, where("status", "==", "completed"))
-      );
-      const pendingReview = await getCountFromServer(
-        query(formsCol, where("status", "==", "pending_review"))
-      );
-      const inReview = await getCountFromServer(
-        query(formsCol, where("status", "==", "in_review"))
-      );
-      const overdue = await getCountFromServer(
-        query(formsCol, where("status", "==", "overdue"))
-      );
-      // this week: submissionDate >= Monday 00:00
-      const thisWeek = await getCountFromServer(
-        query(formsCol, where("submissionDate", ">=", startOfWeek))
-      );
-
-      setCounts({
-        users: {
-          total: totalUsers.data().count,
-          admin: adminUsers.data().count,
-          participant: participants.data().count,
-          support_worker: supportWorkers.data().count,
-          fitness_partner: fitnessPartners.data().count,
-          service_provider: serviceProviders.data().count,
-          instructor: instructors.data().count,
-        },
-        programs: totalPrograms.data().count,
-        forms: {
-          total: totalForms.data().count,
-          completed: completed.data().count,
-          pending_review: pendingReview.data().count,
-          in_review: inReview.data().count,
-          overdue: overdue.data().count,
-          thisWeek: thisWeek.data().count,
-        },
-      });
-
-      setLoading(false);
-    })();
-  }, [userProfile, startOfWeek]);
-
   if (!userProfile) return null;
-  if (userProfile.role !== "admin") return null;
+
+  const role = userProfile.role;
+  const videoDocKey = roleToVideoKey[role] ?? "participant";
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="space-y-8">
       <div>
-        <h1 className="text-2xl font-semibold">Admin Overview</h1>
-        <p className="text-slate-600">
-          Key stats across users, programs, and forms.
+        <h1 className="text-2xl font-semibold">
+          Welcome{userProfile.displayName ? `, ${userProfile.displayName}` : ""}
+        </h1>
+        <p className="text-sm text-neutral-600">
+          Your role: {ROLE_DISPLAY_NAMES[role] ?? role}
         </p>
       </div>
 
-      {loading || !counts ? (
-        <div className="rounded-xl border p-6">Loading stats…</div>
-      ) : (
-        <>
-          {/* Users */}
-          <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <StatCard
-              title="Total Users"
-              value={counts.users.total}
-              href="/admin/users"
-            />
-            <StatCard title="Participants" value={counts.users.participant} />
-            <StatCard
-              title="Support Workers"
-              value={counts.users.support_worker}
-            />
-            <StatCard
-              title="Service Providers"
-              value={counts.users.service_provider}
-            />
-            <StatCard
-              title="Fitness Partners"
-              value={counts.users.fitness_partner}
-            />
-            <StatCard title="Instructors" value={counts.users.instructor} />
-            <StatCard title="Admins" value={counts.users.admin} />
-            <StatCard
-              title="Programs"
-              value={counts.programs}
-              href="/dashboard/programs"
-            />
-          </section>
+      <IntroVideo videoKey={videoDocKey} />
 
-          {/* Forms */}
-          <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            <StatCard
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        {role === "participant" && (
+          <CardLink
+            href="/dashboard/programs/assigned"
+            title="Training Program"
+            desc="View your assigned program and dates."
+          />
+        )}
+        {role === "support_worker" && (
+          <CardLink
+            href="/dashboard/forms/monitoring"
+            title="Client Monitoring Form"
+            desc="Submit weekly monitoring for clients."
+          />
+        )}
+        {role === "fitness_partner" && (
+          <CardLink
+            href="/dashboard/forms/group-management"
+            title="Group Management Form"
+            desc="Manage groups and session notes."
+          />
+        )}
+        {role === "service_provider" && (
+          <CardLink
+            href="/dashboard/forms/feedback"
+            title="Feedback Form"
+            desc="Provide program/service feedback."
+          />
+        )}
+        {role === "instructor" && (
+          <CardLink
+            href="/dashboard/forms/progress-overview"
+            title="Progress Overview"
+            desc="Submit participant progress summaries."
+          />
+        )}
+        {role === "admin" && (
+          <>
+            <CardLink
+              href="/dashboard/admin/assign"
+              title="Assign Programs"
+              desc="Assign programs to participants with dates."
+            />
+            <CardLink
+              href="/dashboard/admin/data"
               title="All Submissions"
-              value={counts.forms.total}
-              href="/dashboard/admin/forms"
+              desc="View/search/export all form data."
             />
-            <StatCard title="This Week" value={counts.forms.thisWeek} />
-            <StatCard title="Completed" value={counts.forms.completed} />
-            <StatCard
-              title="Pending Review"
-              value={counts.forms.pending_review}
-            />
-            <StatCard title="In Review" value={counts.forms.in_review} />
-            <StatCard title="Overdue" value={counts.forms.overdue} />
-          </section>
-
-          {/* Quick links */}
-          <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            <QuickLink
-              href="/dashboard/admin/forms"
-              title="Review Forms"
-              desc="Filter by role, type, status"
-            />
-            <QuickLink
-              href="/admin/users"
-              title="Manage Users"
-              desc="Roles, activation"
-            />
-            <QuickLink
-              href="/dashboard/programs"
-              title="Programs"
-              desc="Create & assign programs"
-            />
-          </section>
-        </>
-      )}
+          </>
+        )}
+      </div>
     </div>
   );
 }
 
-function StatCard({
-  title,
-  value,
-  href,
-}: {
-  title: string;
-  value: number;
-  href?: string;
-}) {
-  const content = (
-    <div className="rounded-xl border p-4 hover:bg-slate-50 dark:hover:bg-slate-800 transition">
-      <div className="text-sm text-slate-500">{title}</div>
-      <div className="text-2xl font-semibold">{value}</div>
-    </div>
-  );
-  return href ? <Link href={href}>{content}</Link> : content;
-}
-
-function QuickLink({
+function CardLink({
   href,
   title,
   desc,
@@ -261,10 +100,10 @@ function QuickLink({
   return (
     <Link
       href={href}
-      className="rounded-xl border p-4 hover:bg-slate-50 dark:hover:bg-slate-800 transition block"
+      className="block rounded-2xl border border-neutral-200 bg-white p-4 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-sky-400"
     >
-      <div className="font-medium">{title}</div>
-      <div className="text-sm text-slate-500">{desc}</div>
+      <h3 className="font-medium">{title}</h3>
+      <p className="text-sm text-neutral-600 mt-1">{desc}</p>
     </Link>
   );
 }
