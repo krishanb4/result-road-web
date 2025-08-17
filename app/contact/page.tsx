@@ -25,13 +25,13 @@ import {
 import Image from "next/image";
 
 const contactMethods = [
-  {
-    icon: Phone,
-    title: "Phone",
-    value: "0456 194 251",
-    description: "Call us during business hours for immediate assistance",
-    available: "Mon-Fri 9AM-5PM",
-  },
+  // {
+  //   icon: Phone,
+  //   title: "Phone",
+  //   value: "0456 194 251",
+  //   description: "Call us during business hours for immediate assistance",
+  //   available: "Mon-Fri 9AM-5PM",
+  //},
   {
     icon: Mail,
     title: "Email",
@@ -67,7 +67,7 @@ const teamMembers = [
     name: "Nathan",
     role: "Program Director",
     email: "hello@resultroad.com.au",
-    phone: "0456 194 251",
+    phone: "",
     specialties: ["Program Development", "Community Outreach", "Partnerships"],
     image: "/team/nathan.jpg",
   },

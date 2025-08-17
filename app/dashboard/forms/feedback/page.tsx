@@ -1,52 +1,13 @@
 "use client";
-
+import FeedbackForm from "@/components/forms/FeedbackForm";
+import { useSearchParams } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
-import { addDoc, collection, serverTimestamp } from "firebase/firestore";
-import { db } from "@/lib/firebase";
-import { useState } from "react";
 
-export default function ServiceProviderFeedbackPage() {
-  const { userProfile } = useAuth();
-  const [programId, setProgramId] = useState("");
-  const [feedback, setFeedback] = useState("");
-
-  async function submit() {
-    if (!userProfile) return;
-    await addDoc(collection(db, "serviceProviderFeedback"), {
-      serviceProviderUid: userProfile.uid,
-      programId,
-      feedback,
-      createdAt: serverTimestamp(),
-    });
-    setFeedback("");
-  }
-
-  return (
-    <div className="max-w-xl space-y-4">
-      <h2 className="text-xl font-semibold">Service Provider Feedback</h2>
-      <label className="block text-sm">
-        Program ID
-        <input
-          className="mt-1 w-full rounded-lg border p-2"
-          value={programId}
-          onChange={(e) => setProgramId(e.target.value)}
-        />
-      </label>
-      <label className="block text-sm">
-        Feedback
-        <textarea
-          className="mt-1 w-full rounded-lg border p-2"
-          rows={6}
-          value={feedback}
-          onChange={(e) => setFeedback(e.target.value)}
-        />
-      </label>
-      <button
-        onClick={submit}
-        className="rounded-lg border px-4 py-2 hover:bg-neutral-50"
-      >
-        Submit
-      </button>
-    </div>
-  );
+export default function FeedbackFormPage() {
+  const { user } = useAuth();
+  const kind = (useSearchParams().get("kind") ?? "service_provider") as
+    | "service_provider"
+    | "fitness_partner";
+  if (!user) return <p>Please sign in.</p>;
+  return <FeedbackForm uid={user.uid} kind={kind} />;
 }

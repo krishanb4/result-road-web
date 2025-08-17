@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Upload,
   User,
@@ -18,17 +18,22 @@ import {
   UserCheck,
 } from "lucide-react";
 
-// Import your Firebase instances
-import { auth, db } from "@/lib/firebase";
 import { Navigation } from "@/components/ui/Navigation";
 import { Footer } from "@/components/ui/Footer";
 import { useSeasonalColors } from "@/contexts/ThemeContext";
 import { useAuth, UserRole } from "@/contexts/AuthContext";
+
+// Firebase
+import app, { auth, db } from "@/lib/firebase";
+import {
+  onAuthStateChanged,
+  updateProfile,
+  User as FirebaseUser,
+} from "firebase/auth";
 import { doc, setDoc, serverTimestamp } from "firebase/firestore";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
 
-// Initialize storage
-const storage = getStorage();
+const storage = getStorage(app);
 
 const roles: {
   value: UserRole;
@@ -69,7 +74,7 @@ const roles: {
 ];
 
 interface FormData {
-  // Auth fields
+  // Auth
   emailAddress: string;
   password: string;
   confirmPassword: string;
@@ -88,7 +93,7 @@ interface FormData {
   height: string;
   weight: string;
 
-  // Client Representative Details
+  // Representative
   repFirstName: string;
   repLastName: string;
   repPhoneNumber: string;
@@ -98,7 +103,7 @@ interface FormData {
   repState: string;
   repPostcode: string;
 
-  // NDIS Details
+  // NDIS
   planType: string;
   planManagerName: string;
   planManagerAgency: string;
@@ -108,7 +113,7 @@ interface FormData {
   planReviewDate: string;
   clientGoals: string;
 
-  // Referrer Details
+  // Referrer
   referrerFirstName: string;
   referrerLastName: string;
   referrerAgency: string;
@@ -117,22 +122,25 @@ interface FormData {
   referrerPhone: string;
   consentObtained: boolean;
 
-  // Reason for Referral
+  // Referral
   referralType: string;
   medicalInformation: string;
   fileUpload: File | null;
+
+  // Terms
+  acceptedTerms: boolean;
 }
 
 export default function RegisterPage() {
   const seasonalColors = useSeasonalColors();
   const { signUp, signIn } = useAuth();
+
   const [currentStep, setCurrentStep] = useState(0);
   const [errors, setErrors] = useState<Record<string, boolean | string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [authMode, setAuthMode] = useState<"signup" | "signin">("signup");
   const [successMessage, setSuccessMessage] = useState("");
-  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [currentUser, setCurrentUser] = useState<FirebaseUser | null>(null);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
@@ -178,7 +186,22 @@ export default function RegisterPage() {
     referralType: "",
     medicalInformation: "",
     fileUpload: null,
+    acceptedTerms: false,
   });
+
+  useEffect(() => {
+    const unsub = onAuthStateChanged(auth, (u) => {
+      setCurrentUser(u);
+      if (u) {
+        setFormData((prev) => ({
+          ...prev,
+          emailAddress: prev.emailAddress || u.email || "",
+          displayName: prev.displayName || u.displayName || "",
+        }));
+      }
+    });
+    return () => unsub();
+  }, []);
 
   const totalSteps = 6;
 
@@ -186,25 +209,23 @@ export default function RegisterPage() {
     field: keyof FormData,
     value: string | boolean | File | null
   ) => {
-    setFormData((prev) => ({
-      ...prev,
-      [field]: value,
-    }));
-    if (errors[field]) {
-      setErrors((prev) => ({
-        ...prev,
-        [field]: false,
-      }));
-    }
+    setFormData((prev) => ({ ...prev, [field]: value }));
+    if (errors[field]) setErrors((prev) => ({ ...prev, [field]: false }));
   };
 
   const validateAuth = (): boolean => {
     const newErrors: Record<string, boolean | string> = {};
     let isValid = true;
 
-    if (!formData.displayName.trim()) {
-      newErrors.displayName = "Full name is required";
-      isValid = false;
+    if (authMode === "signup") {
+      if (!formData.displayName.trim()) {
+        newErrors.displayName = "Full name is required";
+        isValid = false;
+      }
+      if (!formData.acceptedTerms) {
+        newErrors.acceptedTerms = "You must accept the Privacy Policy";
+        isValid = false;
+      }
     }
 
     if (!formData.emailAddress.trim()) {
@@ -249,15 +270,18 @@ export default function RegisterPage() {
           formData.role,
           formData.displayName
         );
+        if (auth.currentUser && formData.displayName) {
+          await updateProfile(auth.currentUser, {
+            displayName: formData.displayName,
+          });
+        }
       } else {
         await signIn(formData.emailAddress, formData.password);
       }
-
-      setIsAuthenticated(true);
       setCurrentStep(1);
     } catch (error: any) {
       console.error("Authentication error:", error);
-      setErrors({ auth: error.message || "Authentication failed" });
+      setErrors({ auth: error?.message || "Authentication failed" });
     } finally {
       setIsSubmitting(false);
     }
@@ -268,8 +292,8 @@ export default function RegisterPage() {
     let isValid = true;
 
     switch (step) {
-      case 1:
-        const step1Required = [
+      case 1: {
+        const required: (keyof FormData)[] = [
           "firstName",
           "lastName",
           "dateOfBirth",
@@ -279,38 +303,40 @@ export default function RegisterPage() {
           "state",
           "postcode",
         ];
-        step1Required.forEach((field) => {
-          if (!formData[field as keyof FormData]) {
-            newErrors[field] = true;
+        required.forEach((f) => {
+          if (!formData[f]) {
+            newErrors[f] = true;
             isValid = false;
           }
         });
         break;
-      case 3:
-        const step3Required = [
+      }
+      case 3: {
+        const required: (keyof FormData)[] = [
           "planType",
           "ndisNumber",
           "planStartDate",
           "planReviewDate",
           "clientGoals",
         ];
-        step3Required.forEach((field) => {
-          if (!formData[field as keyof FormData]) {
-            newErrors[field] = true;
+        required.forEach((f) => {
+          if (!formData[f]) {
+            newErrors[f] = true;
             isValid = false;
           }
         });
         break;
-      case 4:
-        const step4Required = [
+      }
+      case 4: {
+        const required: (keyof FormData)[] = [
           "referrerFirstName",
           "referrerLastName",
           "referrerEmail",
           "referrerPhone",
         ];
-        step4Required.forEach((field) => {
-          if (!formData[field as keyof FormData]) {
-            newErrors[field] = true;
+        required.forEach((f) => {
+          if (!formData[f]) {
+            newErrors[f] = true;
             isValid = false;
           }
         });
@@ -319,15 +345,20 @@ export default function RegisterPage() {
           isValid = false;
         }
         break;
-      case 5:
-        const step5Required = ["referralType", "medicalInformation"];
-        step5Required.forEach((field) => {
-          if (!formData[field as keyof FormData]) {
-            newErrors[field] = true;
+      }
+      case 5: {
+        const required: (keyof FormData)[] = [
+          "referralType",
+          "medicalInformation",
+        ];
+        required.forEach((f) => {
+          if (!formData[f]) {
+            newErrors[f] = true;
             isValid = false;
           }
         });
         break;
+      }
     }
 
     setErrors(newErrors);
@@ -339,62 +370,44 @@ export default function RegisterPage() {
       handleAuth();
       return;
     }
-
     if (validateStep(currentStep) && currentStep < totalSteps - 1) {
-      setCurrentStep(currentStep + 1);
+      setCurrentStep((s) => s + 1);
     }
   };
 
   const handlePrevious = () => {
-    if (currentStep > 0) {
-      setCurrentStep(currentStep - 1);
-    }
+    if (currentStep > 0) setCurrentStep((s) => s - 1);
   };
 
   const uploadFile = async (file: File): Promise<string | null> => {
     if (!file || !currentUser) return null;
-
-    try {
-      // Create a unique filename with timestamp
-      const timestamp = Date.now();
-      const fileExtension = file.name.split(".").pop();
-      const fileName = `${timestamp}-${file.name}`;
-
-      // Create storage reference
-      const fileRef = ref(storage, `ndis-plans/${currentUser.uid}/${fileName}`);
-
-      // Upload file
-      const snapshot = await uploadBytes(fileRef, file);
-
-      // Get download URL
-      const downloadURL = await getDownloadURL(snapshot.ref);
-
-      return downloadURL;
-    } catch (error) {
-      console.error("Error uploading file:", error);
-      throw new Error("Failed to upload file. Please try again.");
-    }
+    const timestamp = Date.now();
+    const safeName = file.name.replace(/[^\w.\-]+/g, "_");
+    const fileName = `${timestamp}-${safeName}`;
+    const fileRef = ref(storage, `ndis-plans/${currentUser.uid}/${fileName}`);
+    const snapshot = await uploadBytes(fileRef, file);
+    return await getDownloadURL(snapshot.ref);
   };
 
   const handleSubmit = async () => {
     if (!validateStep(currentStep) || !currentUser) return;
-
     setIsSubmitting(true);
-    try {
-      // Upload file if present
-      let fileUrl = null;
-      if (formData.fileUpload) {
-        fileUrl = await uploadFile(formData.fileUpload);
-      }
 
-      // Prepare user data for Firestore
+    try {
+      // Upload file if provided
+      let fileUrl: string | null = null;
+      if (formData.fileUpload) fileUrl = await uploadFile(formData.fileUpload);
+
+      // USERS/{uid}
       const userData = {
-        // Personal Information
+        uid: currentUser.uid,
+        role: formData.role,
+        email: formData.emailAddress,
+        displayName: formData.displayName || currentUser.displayName || "",
         firstName: formData.firstName,
         lastName: formData.lastName,
         dateOfBirth: formData.dateOfBirth,
         phoneNumber: formData.phoneNumber,
-        email: formData.emailAddress,
         address: {
           street: formData.streetAddress,
           city: formData.city,
@@ -405,8 +418,6 @@ export default function RegisterPage() {
           height: formData.height ? parseInt(formData.height) : null,
           weight: formData.weight ? parseInt(formData.weight) : null,
         },
-
-        // Representative Information (if provided)
         representative: formData.repFirstName
           ? {
               firstName: formData.repFirstName,
@@ -421,60 +432,53 @@ export default function RegisterPage() {
               },
             }
           : null,
-
-        // NDIS Information
         ndis: {
           planType: formData.planType,
-          planManagerName: formData.planManagerName,
-          planManagerAgency: formData.planManagerAgency,
+          planManagerName: formData.planManagerName || null,
+          planManagerAgency: formData.planManagerAgency || null,
           ndisNumber: formData.ndisNumber,
-          availableFunding: formData.availableFunding,
+          availableFunding: formData.availableFunding || null,
           planStartDate: formData.planStartDate,
           planReviewDate: formData.planReviewDate,
           goals: formData.clientGoals,
           planDocumentUrl: fileUrl,
         },
-
-        // Referrer Information
         referrer: {
           firstName: formData.referrerFirstName,
           lastName: formData.referrerLastName,
-          agency: formData.referrerAgency,
-          role: formData.referrerRole,
+          agency: formData.referrerAgency || null,
+          role: formData.referrerRole || null,
           email: formData.referrerEmail,
           phone: formData.referrerPhone,
           consentObtained: formData.consentObtained,
         },
-
-        // Referral Information
         referral: {
           type: formData.referralType,
           medicalInformation: formData.medicalInformation,
         },
-
-        // User role and metadata
-        role: "participant",
         registrationStatus: "pending",
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
       };
 
-      // Save to Firestore users collection
-      const userDocRef = doc(db, "users", currentUser.uid);
-      await setDoc(userDocRef, userData);
+      await setDoc(doc(db, "users", currentUser.uid), userData, {
+        merge: true,
+      });
 
-      // Create initial care plan document
+      // CAREPLANS/{uid}
       const carePlanData = {
         participantId: currentUser.uid,
         goals: formData.clientGoals,
         medicalInfo: formData.medicalInformation,
+        planDocumentUrl: fileUrl,
+        status: "active",
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
-        status: "active",
       };
 
-      const carePlanRef = doc(db, "carePlans", currentUser.uid);
-      await setDoc(carePlanRef, carePlanData);
+      await setDoc(doc(db, "carePlans", currentUser.uid), carePlanData, {
+        merge: true,
+      });
 
       setSuccessMessage(
         "Registration completed successfully! You will be contacted soon by our team to schedule your initial assessment."
@@ -483,7 +487,7 @@ export default function RegisterPage() {
       console.error("Error submitting registration:", error);
       setErrors({
         submit:
-          error.message || "Failed to submit registration. Please try again.",
+          error?.message || "Failed to submit registration. Please try again.",
       });
     } finally {
       setIsSubmitting(false);
@@ -493,14 +497,12 @@ export default function RegisterPage() {
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0] || null;
 
-    // Validate file size (10MB limit)
     if (file && file.size > 10 * 1024 * 1024) {
       setErrors({ fileUpload: "File size must be less than 10MB" });
       return;
     }
 
-    // Validate file type
-    const allowedTypes = [
+    const allowed = [
       "application/pdf",
       "application/msword",
       "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
@@ -508,13 +510,12 @@ export default function RegisterPage() {
       "image/png",
       "image/jpg",
     ];
-    if (file && !allowedTypes.includes(file.type)) {
+    if (file && !allowed.includes(file.type)) {
       setErrors({
         fileUpload: "Please upload a PDF, DOC, DOCX, JPG, or PNG file",
       });
       return;
     }
-
     handleInputChange("fileUpload", file);
   };
 
@@ -526,13 +527,11 @@ export default function RegisterPage() {
     "Referrer Details",
     "Referral Information",
   ];
-
   const stepIcons = [User, User, Users, Shield, Heart, FileText];
 
   const renderError = (field: string) => {
     const error = errors[field];
     if (!error) return null;
-
     return (
       <p className="mt-1 text-sm text-red-500 flex items-center">
         <AlertCircle className="w-4 h-4 mr-1" />
@@ -580,15 +579,13 @@ export default function RegisterPage() {
             </p>
           </div>
 
-          {/* Progress Steps */}
+          {/* Progress */}
           <div className="mb-12">
             <div className="relative flex items-center justify-between mb-4">
               {stepTitles.map((title, index) => {
                 const IconComponent = stepIcons[index];
-                const stepNumber = index;
-                const isActive = stepNumber === currentStep;
-                const isCompleted = stepNumber < currentStep;
-
+                const isActive = index === currentStep;
+                const isCompleted = index < currentStep;
                 return (
                   <div
                     key={index}
@@ -626,8 +623,6 @@ export default function RegisterPage() {
                   </div>
                 );
               })}
-
-              {/* Progress Line */}
               <div className="absolute top-6 left-0 right-0 h-0.5 bg-slate-200 dark:bg-slate-700 -z-10">
                 <div
                   className="h-full bg-green-500 transition-all duration-500 ease-in-out"
@@ -639,9 +634,9 @@ export default function RegisterPage() {
             </div>
           </div>
 
-          {/* Form Container */}
+          {/* Card */}
           <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl p-8">
-            {/* Step 0: Authentication */}
+            {/* Step 0 */}
             {currentStep === 0 && (
               <div className="space-y-6">
                 <div className="border-b border-slate-200 dark:border-slate-700 pb-4 mb-6">
@@ -690,15 +685,15 @@ export default function RegisterPage() {
                       <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
                         Full Name <span className="text-red-500">*</span>
                       </label>
-                      <div className="relative group">
-                        <User className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400 transition-colors" />
+                      <div className="relative">
+                        <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
                         <input
                           type="text"
                           value={formData.displayName}
                           onChange={(e) =>
                             handleInputChange("displayName", e.target.value)
                           }
-                          className={`w-full pl-12 pr-4 py-4 bg-white dark:bg-slate-800 border rounded-xl text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:border-transparent transition-all duration-200 ${
+                          className={`w-full pl-12 pr-4 py-4 bg-white dark:bg-slate-800 border rounded-xl text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:border-transparent ${
                             errors.displayName
                               ? "border-red-500 focus:ring-red-500"
                               : "border-slate-200 dark:border-slate-600"
@@ -722,15 +717,15 @@ export default function RegisterPage() {
                     <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
                       Email Address <span className="text-red-500">*</span>
                     </label>
-                    <div className="relative group">
-                      <Mail className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400 transition-colors" />
+                    <div className="relative">
+                      <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
                       <input
                         type="email"
                         value={formData.emailAddress}
                         onChange={(e) =>
                           handleInputChange("emailAddress", e.target.value)
                         }
-                        className={`w-full pl-12 pr-4 py-4 bg-white dark:bg-slate-800 border rounded-xl text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:border-transparent transition-all duration-200 ${
+                        className={`w-full pl-12 pr-4 py-4 bg-white dark:bg-slate-800 border rounded-xl text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:border-transparent ${
                           errors.emailAddress
                             ? "border-red-500 focus:ring-red-500"
                             : "border-slate-200 dark:border-slate-600"
@@ -754,8 +749,8 @@ export default function RegisterPage() {
                       <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
                         I am a...
                       </label>
-                      <div className="relative group">
-                        <UserCheck className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400 transition-colors z-10" />
+                      <div className="relative">
+                        <UserCheck className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 z-10" />
                         <select
                           value={formData.role}
                           onChange={(e) =>
@@ -764,7 +759,7 @@ export default function RegisterPage() {
                               e.target.value as UserRole
                             )
                           }
-                          className="w-full pl-12 pr-4 py-4 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-xl text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:border-transparent appearance-none transition-all duration-200"
+                          className="w-full pl-12 pr-4 py-4 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-xl text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:border-transparent appearance-none"
                           style={
                             {
                               "--tw-ring-color": seasonalColors.primary,
@@ -804,15 +799,15 @@ export default function RegisterPage() {
                     <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
                       Password <span className="text-red-500">*</span>
                     </label>
-                    <div className="relative group">
-                      <Lock className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400 transition-colors" />
+                    <div className="relative">
+                      <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
                       <input
                         type={showPassword ? "text" : "password"}
                         value={formData.password}
                         onChange={(e) =>
                           handleInputChange("password", e.target.value)
                         }
-                        className={`w-full pl-12 pr-12 py-4 bg-white dark:bg-slate-800 border rounded-xl text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:border-transparent transition-all duration-200 ${
+                        className={`w-full pl-12 pr-12 py-4 bg-white dark:bg-slate-800 border rounded-xl text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:border-transparent ${
                           errors.password
                             ? "border-red-500 focus:ring-red-500"
                             : "border-slate-200 dark:border-slate-600"
@@ -834,19 +829,11 @@ export default function RegisterPage() {
                       <button
                         type="button"
                         onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-4 top-1/2 transform -translate-y-1/2 text-slate-400 transition-colors"
+                        className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400"
                         style={{
                           color: showPassword
                             ? seasonalColors.primary
                             : undefined,
-                        }}
-                        onMouseEnter={(e) => {
-                          e.currentTarget.style.color = seasonalColors.primary;
-                        }}
-                        onMouseLeave={(e) => {
-                          if (!showPassword) {
-                            e.currentTarget.style.color = "";
-                          }
                         }}
                       >
                         {showPassword ? (
@@ -860,100 +847,87 @@ export default function RegisterPage() {
                   </div>
 
                   {authMode === "signup" && (
-                    <div>
-                      <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
-                        Confirm Password <span className="text-red-500">*</span>
-                      </label>
-                      <div className="relative group">
-                        <Lock className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400 transition-colors" />
-                        <input
-                          type={showConfirmPassword ? "text" : "password"}
-                          value={formData.confirmPassword}
-                          onChange={(e) =>
-                            handleInputChange("confirmPassword", e.target.value)
-                          }
-                          className={`w-full pl-12 pr-12 py-4 bg-white dark:bg-slate-800 border rounded-xl text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:border-transparent transition-all duration-200 ${
-                            errors.confirmPassword
-                              ? "border-red-500 focus:ring-red-500"
-                              : "border-slate-200 dark:border-slate-600"
-                          }`}
-                          style={
-                            !errors.confirmPassword
-                              ? ({
-                                  "--tw-ring-color": seasonalColors.primary,
-                                } as React.CSSProperties)
-                              : undefined
-                          }
-                          placeholder="Confirm your password"
-                          required
-                        />
-                        <button
-                          type="button"
-                          onClick={() =>
-                            setShowConfirmPassword(!showConfirmPassword)
-                          }
-                          className="absolute right-4 top-1/2 transform -translate-y-1/2 text-slate-400 transition-colors"
-                          style={{
-                            color: showConfirmPassword
-                              ? seasonalColors.primary
-                              : undefined,
-                          }}
-                          onMouseEnter={(e) => {
-                            e.currentTarget.style.color =
-                              seasonalColors.primary;
-                          }}
-                          onMouseLeave={(e) => {
-                            if (!showConfirmPassword) {
-                              e.currentTarget.style.color = "";
+                    <>
+                      <div>
+                        <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
+                          Confirm Password{" "}
+                          <span className="text-red-500">*</span>
+                        </label>
+                        <div className="relative">
+                          <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                          <input
+                            type={showConfirmPassword ? "text" : "password"}
+                            value={formData.confirmPassword}
+                            onChange={(e) =>
+                              handleInputChange(
+                                "confirmPassword",
+                                e.target.value
+                              )
                             }
-                          }}
-                        >
-                          {showConfirmPassword ? (
-                            <EyeOff className="w-5 h-5" />
-                          ) : (
-                            <Eye className="w-5 h-5" />
-                          )}
-                        </button>
+                            className={`w-full pl-12 pr-12 py-4 bg-white dark:bg-slate-800 border rounded-xl text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:border-transparent ${
+                              errors.confirmPassword
+                                ? "border-red-500 focus:ring-red-500"
+                                : "border-slate-200 dark:border-slate-600"
+                            }`}
+                            style={
+                              !errors.confirmPassword
+                                ? ({
+                                    "--tw-ring-color": seasonalColors.primary,
+                                  } as React.CSSProperties)
+                                : undefined
+                            }
+                            placeholder="Confirm your password"
+                            required
+                          />
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setShowConfirmPassword(!showConfirmPassword)
+                            }
+                            className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400"
+                            style={{
+                              color: showConfirmPassword
+                                ? seasonalColors.primary
+                                : undefined,
+                            }}
+                          >
+                            {showConfirmPassword ? (
+                              <EyeOff className="w-5 h-5" />
+                            ) : (
+                              <Eye className="w-5 h-5" />
+                            )}
+                          </button>
+                        </div>
+                        {renderError("confirmPassword")}
                       </div>
-                      {renderError("confirmPassword")}
-                    </div>
-                  )}
 
-                  {authMode === "signup" && (
-                    <div className="flex items-start space-x-3">
-                      <input
-                        type="checkbox"
-                        id="terms"
-                        className="w-4 h-4 bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 rounded transition-colors mt-1"
-                        style={{
-                          accentColor: seasonalColors.primary,
-                        }}
-                        required
-                      />
-                      <label
-                        htmlFor="terms"
-                        className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed"
-                      >
-                        I agree to the{" "}
-                        <a
-                          href="#"
-                          className="font-medium transition-colors"
-                          style={{
-                            color: seasonalColors.primary,
-                          }}
-                          onMouseEnter={(e) => {
-                            e.currentTarget.style.color =
-                              seasonalColors.primaryHover;
-                          }}
-                          onMouseLeave={(e) => {
-                            e.currentTarget.style.color =
-                              seasonalColors.primary;
-                          }}
+                      <div className="flex items-start space-x-3">
+                        <input
+                          type="checkbox"
+                          id="terms"
+                          checked={formData.acceptedTerms}
+                          onChange={(e) =>
+                            handleInputChange("acceptedTerms", e.target.checked)
+                          }
+                          className="w-4 h-4 bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 rounded mt-1"
+                          style={{ accentColor: seasonalColors.primary }}
+                        />
+                        <label
+                          htmlFor="terms"
+                          className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed"
                         >
-                          Privacy Policy
-                        </a>
-                      </label>
-                    </div>
+                          I agree to the{" "}
+                          <a
+                            href="#"
+                            className="font-medium"
+                            style={{ color: seasonalColors.primary }}
+                          >
+                            Privacy Policy
+                          </a>
+                        </label>
+                      </div>
+                      {renderError("acceptedTerms")}
+                    </>
                   )}
 
                   {errors.auth && (
@@ -968,7 +942,7 @@ export default function RegisterPage() {
               </div>
             )}
 
-            {/* Step 1: Client Details */}
+            {/* Step 1 */}
             {currentStep === 1 && (
               <div className="space-y-6">
                 <div className="border-b border-slate-200 dark:border-slate-700 pb-4 mb-6">
@@ -992,11 +966,11 @@ export default function RegisterPage() {
                       onChange={(e) =>
                         handleInputChange("firstName", e.target.value)
                       }
-                      className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:border-transparent bg-white dark:bg-slate-700 text-slate-900 dark:text-white transition-colors ${
+                      className={`w-full px-4 py-3 border rounded-lg ${
                         errors.firstName
-                          ? "border-red-500 focus:ring-red-500"
-                          : "border-slate-300 dark:border-slate-600 focus:ring-blue-500"
-                      }`}
+                          ? "border-red-500 ring-2 ring-red-500"
+                          : "border-slate-300 dark:border-slate-600"
+                      } bg-white dark:bg-slate-700 text-slate-900 dark:text-white`}
                     />
                     {renderError("firstName")}
                   </div>
@@ -1010,11 +984,11 @@ export default function RegisterPage() {
                       onChange={(e) =>
                         handleInputChange("lastName", e.target.value)
                       }
-                      className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:border-transparent bg-white dark:bg-slate-700 text-slate-900 dark:text-white transition-colors ${
+                      className={`w-full px-4 py-3 border rounded-lg ${
                         errors.lastName
-                          ? "border-red-500 focus:ring-red-500"
-                          : "border-slate-300 dark:border-slate-600 focus:ring-blue-500"
-                      }`}
+                          ? "border-red-500 ring-2 ring-red-500"
+                          : "border-slate-300 dark:border-slate-600"
+                      } bg-white dark:bg-slate-700 text-slate-900 dark:text-white`}
                     />
                     {renderError("lastName")}
                   </div>
@@ -1028,11 +1002,11 @@ export default function RegisterPage() {
                       onChange={(e) =>
                         handleInputChange("dateOfBirth", e.target.value)
                       }
-                      className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:border-transparent bg-white dark:bg-slate-700 text-slate-900 dark:text-white transition-colors ${
+                      className={`w-full px-4 py-3 border rounded-lg ${
                         errors.dateOfBirth
-                          ? "border-red-500 focus:ring-red-500"
-                          : "border-slate-300 dark:border-slate-600 focus:ring-blue-500"
-                      }`}
+                          ? "border-red-500 ring-2 ring-red-500"
+                          : "border-slate-300 dark:border-slate-600"
+                      } bg-white dark:bg-slate-700 text-slate-900 dark:text-white`}
                     />
                     {renderError("dateOfBirth")}
                   </div>
@@ -1049,26 +1023,41 @@ export default function RegisterPage() {
                       onChange={(e) =>
                         handleInputChange("phoneNumber", e.target.value)
                       }
-                      className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:border-transparent bg-white dark:bg-slate-700 text-slate-900 dark:text-white transition-colors ${
+                      className={`w-full px-4 py-3 border rounded-lg ${
                         errors.phoneNumber
-                          ? "border-red-500 focus:ring-red-500"
-                          : "border-slate-300 dark:border-slate-600 focus:ring-blue-500"
-                      }`}
+                          ? "border-red-500 ring-2 ring-red-500"
+                          : "border-slate-300 dark:border-slate-600"
+                      } bg-white dark:bg-slate-700 text-slate-900 dark:text-white`}
                     />
                     {renderError("phoneNumber")}
                   </div>
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                      Height (cm)
-                    </label>
-                    <input
-                      type="number"
-                      value={formData.height}
-                      onChange={(e) =>
-                        handleInputChange("height", e.target.value)
-                      }
-                      className="w-full px-4 py-3 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-slate-700 text-slate-900 dark:text-white"
-                    />
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                        Height (cm)
+                      </label>
+                      <input
+                        type="number"
+                        value={formData.height}
+                        onChange={(e) =>
+                          handleInputChange("height", e.target.value)
+                        }
+                        className="w-full px-4 py-3 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                        Weight (kg)
+                      </label>
+                      <input
+                        type="number"
+                        value={formData.weight}
+                        onChange={(e) =>
+                          handleInputChange("weight", e.target.value)
+                        }
+                        className="w-full px-4 py-3 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white"
+                      />
+                    </div>
                   </div>
                 </div>
 
@@ -1082,11 +1071,11 @@ export default function RegisterPage() {
                     onChange={(e) =>
                       handleInputChange("streetAddress", e.target.value)
                     }
-                    className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:border-transparent bg-white dark:bg-slate-700 text-slate-900 dark:text-white transition-colors ${
+                    className={`w-full px-4 py-3 border rounded-lg ${
                       errors.streetAddress
-                        ? "border-red-500 focus:ring-red-500"
-                        : "border-slate-300 dark:border-slate-600 focus:ring-blue-500"
-                    }`}
+                        ? "border-red-500 ring-2 ring-red-500"
+                        : "border-slate-300 dark:border-slate-600"
+                    } bg-white dark:bg-slate-700 text-slate-900 dark:text-white`}
                   />
                   {renderError("streetAddress")}
                 </div>
@@ -1102,11 +1091,11 @@ export default function RegisterPage() {
                       onChange={(e) =>
                         handleInputChange("city", e.target.value)
                       }
-                      className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:border-transparent bg-white dark:bg-slate-700 text-slate-900 dark:text-white transition-colors ${
+                      className={`w-full px-4 py-3 border rounded-lg ${
                         errors.city
-                          ? "border-red-500 focus:ring-red-500"
-                          : "border-slate-300 dark:border-slate-600 focus:ring-blue-500"
-                      }`}
+                          ? "border-red-500 ring-2 ring-red-500"
+                          : "border-slate-300 dark:border-slate-600"
+                      } bg-white dark:bg-slate-700 text-slate-900 dark:text-white`}
                     />
                     {renderError("city")}
                   </div>
@@ -1120,11 +1109,11 @@ export default function RegisterPage() {
                       onChange={(e) =>
                         handleInputChange("state", e.target.value)
                       }
-                      className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:border-transparent bg-white dark:bg-slate-700 text-slate-900 dark:text-white transition-colors ${
+                      className={`w-full px-4 py-3 border rounded-lg ${
                         errors.state
-                          ? "border-red-500 focus:ring-red-500"
-                          : "border-slate-300 dark:border-slate-600 focus:ring-blue-500"
-                      }`}
+                          ? "border-red-500 ring-2 ring-red-500"
+                          : "border-slate-300 dark:border-slate-600"
+                      } bg-white dark:bg-slate-700 text-slate-900 dark:text-white`}
                     />
                     {renderError("state")}
                   </div>
@@ -1138,11 +1127,11 @@ export default function RegisterPage() {
                       onChange={(e) =>
                         handleInputChange("postcode", e.target.value)
                       }
-                      className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:border-transparent bg-white dark:bg-slate-700 text-slate-900 dark:text-white transition-colors ${
+                      className={`w-full px-4 py-3 border rounded-lg ${
                         errors.postcode
-                          ? "border-red-500 focus:ring-red-500"
-                          : "border-slate-300 dark:border-slate-600 focus:ring-blue-500"
-                      }`}
+                          ? "border-red-500 ring-2 ring-red-500"
+                          : "border-slate-300 dark:border-slate-600"
+                      } bg-white dark:bg-slate-700 text-slate-900 dark:text-white`}
                     />
                     {renderError("postcode")}
                   </div>
@@ -1150,7 +1139,7 @@ export default function RegisterPage() {
               </div>
             )}
 
-            {/* Step 2: Representative Details */}
+            {/* Step 2 */}
             {currentStep === 2 && (
               <div className="space-y-6">
                 <div className="border-b border-slate-200 dark:border-slate-700 pb-4 mb-6">
@@ -1178,7 +1167,7 @@ export default function RegisterPage() {
                       onChange={(e) =>
                         handleInputChange("repFirstName", e.target.value)
                       }
-                      className="w-full px-4 py-3 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:border-transparent bg-white dark:bg-slate-700 text-slate-900 dark:text-white"
+                      className="w-full px-4 py-3 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white"
                     />
                   </div>
                   <div>
@@ -1191,14 +1180,100 @@ export default function RegisterPage() {
                       onChange={(e) =>
                         handleInputChange("repLastName", e.target.value)
                       }
-                      className="w-full px-4 py-3 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:border-transparent bg-white dark:bg-slate-700 text-slate-900 dark:text-white"
+                      className="w-full px-4 py-3 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white"
                     />
+                  </div>
+                </div>
+
+                <div className="grid md:grid-cols-2 gap-6">
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                      Phone
+                    </label>
+                    <input
+                      type="tel"
+                      value={formData.repPhoneNumber}
+                      onChange={(e) =>
+                        handleInputChange("repPhoneNumber", e.target.value)
+                      }
+                      className="w-full px-4 py-3 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                      Email
+                    </label>
+                    <input
+                      type="email"
+                      value={formData.repEmail}
+                      onChange={(e) =>
+                        handleInputChange("repEmail", e.target.value)
+                      }
+                      className="w-full px-4 py-3 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid md:grid-cols-3 gap-6">
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                      Street
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.repStreetAddress}
+                      onChange={(e) =>
+                        handleInputChange("repStreetAddress", e.target.value)
+                      }
+                      className="w-full px-4 py-3 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                      City
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.repCity}
+                      onChange={(e) =>
+                        handleInputChange("repCity", e.target.value)
+                      }
+                      className="w-full px-4 py-3 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white"
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                        State
+                      </label>
+                      <input
+                        type="text"
+                        value={formData.repState}
+                        onChange={(e) =>
+                          handleInputChange("repState", e.target.value)
+                        }
+                        className="w-full px-4 py-3 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                        Postcode
+                      </label>
+                      <input
+                        type="text"
+                        value={formData.repPostcode}
+                        onChange={(e) =>
+                          handleInputChange("repPostcode", e.target.value)
+                        }
+                        className="w-full px-4 py-3 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white"
+                      />
+                    </div>
                   </div>
                 </div>
               </div>
             )}
 
-            {/* Step 3: NDIS Details */}
+            {/* Step 3 */}
             {currentStep === 3 && (
               <div className="space-y-6">
                 <div className="border-b border-slate-200 dark:border-slate-700 pb-4 mb-6">
@@ -1251,11 +1326,11 @@ export default function RegisterPage() {
                       onChange={(e) =>
                         handleInputChange("ndisNumber", e.target.value)
                       }
-                      className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:border-transparent bg-white dark:bg-slate-700 text-slate-900 dark:text-white transition-colors ${
+                      className={`w-full px-4 py-3 border rounded-lg ${
                         errors.ndisNumber
-                          ? "border-red-500 focus:ring-red-500"
-                          : "border-slate-300 dark:border-slate-600 focus:ring-blue-500"
-                      }`}
+                          ? "border-red-500 ring-2 ring-red-500"
+                          : "border-slate-300 dark:border-slate-600"
+                      } bg-white dark:bg-slate-700 text-slate-900 dark:text-white`}
                     />
                     {renderError("ndisNumber")}
                   </div>
@@ -1269,7 +1344,7 @@ export default function RegisterPage() {
                       onChange={(e) =>
                         handleInputChange("availableFunding", e.target.value)
                       }
-                      className="w-full px-4 py-3 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-slate-700 text-slate-900 dark:text-white"
+                      className="w-full px-4 py-3 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white"
                     />
                   </div>
                 </div>
@@ -1285,11 +1360,11 @@ export default function RegisterPage() {
                       onChange={(e) =>
                         handleInputChange("planStartDate", e.target.value)
                       }
-                      className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:border-transparent bg-white dark:bg-slate-700 text-slate-900 dark:text-white transition-colors ${
+                      className={`w-full px-4 py-3 border rounded-lg ${
                         errors.planStartDate
-                          ? "border-red-500 focus:ring-red-500"
-                          : "border-slate-300 dark:border-slate-600 focus:ring-blue-500"
-                      }`}
+                          ? "border-red-500 ring-2 ring-red-500"
+                          : "border-slate-300 dark:border-slate-600"
+                      } bg-white dark:bg-slate-700 text-slate-900 dark:text-white`}
                     />
                     {renderError("planStartDate")}
                   </div>
@@ -1303,13 +1378,42 @@ export default function RegisterPage() {
                       onChange={(e) =>
                         handleInputChange("planReviewDate", e.target.value)
                       }
-                      className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:border-transparent bg-white dark:bg-slate-700 text-slate-900 dark:text-white transition-colors ${
+                      className={`w-full px-4 py-3 border rounded-lg ${
                         errors.planReviewDate
-                          ? "border-red-500 focus:ring-red-500"
-                          : "border-slate-300 dark:border-slate-600 focus:ring-blue-500"
-                      }`}
+                          ? "border-red-500 ring-2 ring-red-500"
+                          : "border-slate-300 dark:border-slate-600"
+                      } bg-white dark:bg-slate-700 text-slate-900 dark:text-white`}
                     />
                     {renderError("planReviewDate")}
+                  </div>
+                </div>
+
+                <div className="grid md:grid-cols-2 gap-6">
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                      Plan Manager Name
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.planManagerName}
+                      onChange={(e) =>
+                        handleInputChange("planManagerName", e.target.value)
+                      }
+                      className="w-full px-4 py-3 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                      Plan Manager Agency
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.planManagerAgency}
+                      onChange={(e) =>
+                        handleInputChange("planManagerAgency", e.target.value)
+                      }
+                      className="w-full px-4 py-3 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white"
+                    />
                   </div>
                 </div>
 
@@ -1324,11 +1428,11 @@ export default function RegisterPage() {
                       handleInputChange("clientGoals", e.target.value)
                     }
                     rows={4}
-                    className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:border-transparent bg-white dark:bg-slate-700 text-slate-900 dark:text-white transition-colors ${
+                    className={`w-full px-4 py-3 border rounded-lg ${
                       errors.clientGoals
-                        ? "border-red-500 focus:ring-red-500"
-                        : "border-slate-300 dark:border-slate-600 focus:ring-blue-500"
-                    }`}
+                        ? "border-red-500 ring-2 ring-red-500"
+                        : "border-slate-300 dark:border-slate-600"
+                    } bg-white dark:bg-slate-700 text-slate-900 dark:text-white`}
                     placeholder="Describe the client's goals as outlined in their NDIS plan..."
                   />
                   {renderError("clientGoals")}
@@ -1336,7 +1440,7 @@ export default function RegisterPage() {
               </div>
             )}
 
-            {/* Step 4: Referrer Details */}
+            {/* Step 4 */}
             {currentStep === 4 && (
               <div className="space-y-6">
                 <div className="border-b border-slate-200 dark:border-slate-700 pb-4 mb-6">
@@ -1360,11 +1464,11 @@ export default function RegisterPage() {
                       onChange={(e) =>
                         handleInputChange("referrerFirstName", e.target.value)
                       }
-                      className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:border-transparent bg-white dark:bg-slate-700 text-slate-900 dark:text-white transition-colors ${
+                      className={`w-full px-4 py-3 border rounded-lg ${
                         errors.referrerFirstName
-                          ? "border-red-500 focus:ring-red-500"
-                          : "border-slate-300 dark:border-slate-600 focus:ring-blue-500"
-                      }`}
+                          ? "border-red-500 ring-2 ring-red-500"
+                          : "border-slate-300 dark:border-slate-600"
+                      } bg-white dark:bg-slate-700 text-slate-900 dark:text-white`}
                     />
                     {renderError("referrerFirstName")}
                   </div>
@@ -1378,11 +1482,11 @@ export default function RegisterPage() {
                       onChange={(e) =>
                         handleInputChange("referrerLastName", e.target.value)
                       }
-                      className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:border-transparent bg-white dark:bg-slate-700 text-slate-900 dark:text-white transition-colors ${
+                      className={`w-full px-4 py-3 border rounded-lg ${
                         errors.referrerLastName
-                          ? "border-red-500 focus:ring-red-500"
-                          : "border-slate-300 dark:border-slate-600 focus:ring-blue-500"
-                      }`}
+                          ? "border-red-500 ring-2 ring-red-500"
+                          : "border-slate-300 dark:border-slate-600"
+                      } bg-white dark:bg-slate-700 text-slate-900 dark:text-white`}
                     />
                     {renderError("referrerLastName")}
                   </div>
@@ -1399,11 +1503,11 @@ export default function RegisterPage() {
                       onChange={(e) =>
                         handleInputChange("referrerEmail", e.target.value)
                       }
-                      className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:border-transparent bg-white dark:bg-slate-700 text-slate-900 dark:text-white transition-colors ${
+                      className={`w-full px-4 py-3 border rounded-lg ${
                         errors.referrerEmail
-                          ? "border-red-500 focus:ring-red-500"
-                          : "border-slate-300 dark:border-slate-600 focus:ring-blue-500"
-                      }`}
+                          ? "border-red-500 ring-2 ring-red-500"
+                          : "border-slate-300 dark:border-slate-600"
+                      } bg-white dark:bg-slate-700 text-slate-900 dark:text-white`}
                     />
                     {renderError("referrerEmail")}
                   </div>
@@ -1417,11 +1521,11 @@ export default function RegisterPage() {
                       onChange={(e) =>
                         handleInputChange("referrerPhone", e.target.value)
                       }
-                      className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:border-transparent bg-white dark:bg-slate-700 text-slate-900 dark:text-white transition-colors ${
+                      className={`w-full px-4 py-3 border rounded-lg ${
                         errors.referrerPhone
-                          ? "border-red-500 focus:ring-red-500"
-                          : "border-slate-300 dark:border-slate-600 focus:ring-blue-500"
-                      }`}
+                          ? "border-red-500 ring-2 ring-red-500"
+                          : "border-slate-300 dark:border-slate-600"
+                      } bg-white dark:bg-slate-700 text-slate-900 dark:text-white`}
                     />
                     {renderError("referrerPhone")}
                   </div>
@@ -1457,7 +1561,7 @@ export default function RegisterPage() {
               </div>
             )}
 
-            {/* Step 5: Referral Information */}
+            {/* Step 5 */}
             {currentStep === 5 && (
               <div className="space-y-6">
                 <div className="border-b border-slate-200 dark:border-slate-700 pb-4 mb-6">
@@ -1513,11 +1617,11 @@ export default function RegisterPage() {
                       handleInputChange("medicalInformation", e.target.value)
                     }
                     rows={6}
-                    className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:border-transparent bg-white dark:bg-slate-700 text-slate-900 dark:text-white transition-colors ${
+                    className={`w-full px-4 py-3 border rounded-lg ${
                       errors.medicalInformation
-                        ? "border-red-500 focus:ring-red-500"
-                        : "border-slate-300 dark:border-slate-600 focus:ring-blue-500"
-                    }`}
+                        ? "border-red-500 ring-2 ring-red-500"
+                        : "border-slate-300 dark:border-slate-600"
+                    } bg-white dark:bg-slate-700 text-slate-900 dark:text-white`}
                     placeholder="Please provide relevant medical information..."
                   />
                   {renderError("medicalInformation")}
@@ -1557,7 +1661,7 @@ export default function RegisterPage() {
               </div>
             )}
 
-            {/* Navigation Buttons */}
+            {/* Nav buttons */}
             <div className="flex justify-between pt-8 mt-8 border-t border-slate-200 dark:border-slate-700">
               <button
                 type="button"

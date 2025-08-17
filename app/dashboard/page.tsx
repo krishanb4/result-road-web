@@ -1,109 +1,90 @@
 "use client";
 
-import { useAuth, ROLE_DISPLAY_NAMES } from "@/contexts/AuthContext";
-import IntroVideo from "@/components/video/IntroVideo";
+import { useAuth } from "@/contexts/AuthContext";
+import { Card } from "../../components/ui";
+import VideoCard from "../../components/VideoCard";
 import Link from "next/link";
 
-const roleToVideoKey: Record<string, string> = {
-  admin: "admin",
-  participant: "participant",
-  support_worker: "support_worker",
-  fitness_partner: "fitness_partner",
-  service_provider: "service_provider",
-  instructor: "instructor",
+const INTRO: Record<
+  | "admin"
+  | "participant"
+  | "instructor"
+  | "fitness_partner"
+  | "service_provider"
+  | "support_worker",
+  string
+> = {
+  admin: "https://www.youtube.com/embed/dQw4w9WgXcQ", // TODO
+  participant: "https://www.youtube.com/embed/VIDEO_PARTICIPANT", // TODO
+  instructor: "https://www.youtube.com/embed/VIDEO_INSTRUCTOR", // TODO
+  fitness_partner: "https://www.youtube.com/embed/VIDEO_FP", // TODO
+  service_provider: "https://www.youtube.com/embed/VIDEO_SP", // TODO
+  support_worker: "https://www.youtube.com/embed/VIDEO_SW", // TODO
 };
 
-export default function DashboardIndex() {
-  const { userProfile } = useAuth();
-  if (!userProfile) return null;
+export default function DashboardHome() {
+  const { user, userProfile, loading } = useAuth();
+  if (loading) return <p>Loading…</p>;
+  if (!user || !userProfile) return <p>Please sign in.</p>;
 
   const role = userProfile.role;
-  const videoDocKey = roleToVideoKey[role] ?? "participant";
+
+  const links: { href: string; label: string }[] =
+    role === "admin"
+      ? [
+          { href: "/dashboard/admin", label: "View All Submissions" },
+          { href: "/dashboard/forms/common", label: "Open Common Form" },
+        ]
+      : role === "participant"
+      ? [
+          { href: "/dashboard/programs", label: "My Assigned Programs" },
+          { href: "/dashboard/forms/common", label: "Common Form" },
+        ]
+      : role === "fitness_partner"
+      ? [
+          {
+            href: "/dashboard/forms/feedback?kind=fitness_partner",
+            label: "Group Feedback Form",
+          },
+          { href: "/dashboard/forms/common", label: "Common Form" },
+        ]
+      : role === "service_provider"
+      ? [
+          {
+            href: "/dashboard/forms/feedback?kind=service_provider",
+            label: "Feedback Form",
+          },
+          { href: "/dashboard/forms/common", label: "Common Form" },
+        ]
+      : role === "support_worker"
+      ? [
+          {
+            href: "/dashboard/forms/monitoring",
+            label: "Client Monitoring Form",
+          },
+          { href: "/dashboard/forms/common", label: "Common Form" },
+        ]
+      : [{ href: "/dashboard/forms/common", label: "Common Form" }];
 
   return (
-    <div className="space-y-8">
-      <div>
-        <h1 className="text-2xl font-semibold">
-          Welcome{userProfile.displayName ? `, ${userProfile.displayName}` : ""}
-        </h1>
-        <p className="text-sm text-neutral-600">
-          Your role: {ROLE_DISPLAY_NAMES[role] ?? role}
-        </p>
-      </div>
-
-      <IntroVideo videoKey={videoDocKey} />
-
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {role === "participant" && (
-          <CardLink
-            href="/dashboard/programs/assigned"
-            title="Training Program"
-            desc="View your assigned program and dates."
-          />
-        )}
-        {role === "support_worker" && (
-          <CardLink
-            href="/dashboard/forms/monitoring"
-            title="Client Monitoring Form"
-            desc="Submit weekly monitoring for clients."
-          />
-        )}
-        {role === "fitness_partner" && (
-          <CardLink
-            href="/dashboard/forms/group-management"
-            title="Group Management Form"
-            desc="Manage groups and session notes."
-          />
-        )}
-        {role === "service_provider" && (
-          <CardLink
-            href="/dashboard/forms/feedback"
-            title="Feedback Form"
-            desc="Provide program/service feedback."
-          />
-        )}
-        {role === "instructor" && (
-          <CardLink
-            href="/dashboard/forms/progress-overview"
-            title="Progress Overview"
-            desc="Submit participant progress summaries."
-          />
-        )}
-        {role === "admin" && (
-          <>
-            <CardLink
-              href="/dashboard/admin/assign"
-              title="Assign Programs"
-              desc="Assign programs to participants with dates."
-            />
-            <CardLink
-              href="/dashboard/admin/data"
-              title="All Submissions"
-              desc="View/search/export all form data."
-            />
-          </>
-        )}
-      </div>
+    <div className="grid gap-8">
+      <VideoCard title="Intro Video" src={INTRO[role]} />
+      <Card>
+        <h2 className="mb-3 text-lg font-semibold tracking-tight">
+          Quick Actions
+        </h2>
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3">
+          {links.map((l) => (
+            <Link
+              key={l.href}
+              href={l.href}
+              className="rounded-xl border border-white/10 bg-white/5 p-4 hover:bg-white/10"
+            >
+              {l.label}
+            </Link>
+          ))}
+        </div>
+      </Card>
     </div>
-  );
-}
-
-function CardLink({
-  href,
-  title,
-  desc,
-}: {
-  href: string;
-  title: string;
-  desc: string;
-}) {
-  return (
-    <Link
-      href={href}
-      className="block rounded-2xl border border-neutral-200 bg-white p-4 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-sky-400"
-    >
-      <h3 className="font-medium">{title}</h3>
-      <p className="text-sm text-neutral-600 mt-1">{desc}</p>
-    </Link>
   );
 }

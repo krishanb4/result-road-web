@@ -613,7 +613,7 @@ export function CTASection() {
             Questions? We're here to help!
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center space-y-4 sm:space-y-0 sm:space-x-8">
-            <motion.a
+            {/* <motion.a
               href="tel:0456194251"
               className="flex items-center space-x-2 text-lg font-medium"
               style={{ color: colors.primary }}
@@ -621,7 +621,7 @@ export function CTASection() {
             >
               <Phone className="w-5 h-5" />
               <span>0456 194 251</span>
-            </motion.a>
+            </motion.a> */}
             <motion.a
               href="mailto:nath@boxcamp.page"
               className="flex items-center space-x-2 text-lg font-medium"

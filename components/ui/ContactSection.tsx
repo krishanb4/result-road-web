@@ -18,13 +18,13 @@ import {
 import { useSeasonalTheme, useSeasonalColors } from "./SeasonalThemeContext";
 
 const contactInfo = [
-  {
-    icon: Phone,
-    label: "Phone",
-    value: "0456 194 251",
-    description: "Call us Monday to Friday, 9AM - 5PM",
-    href: "tel:0456194251",
-  },
+  // {
+  //   icon: Phone,
+  //   label: "Phone",
+  //   value: "0456 194 251",
+  //   description: "Call us Monday to Friday, 9AM - 5PM",
+  //   href: "tel:0456194251",
+  // },
   {
     icon: Mail,
     label: "Email",
