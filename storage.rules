@@ -1,0 +1,24 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    function isAuthenticated() { return request.auth != null; }
+
+    // Files live under ndis-plans/{uid}/{filename}
+    match /ndis-plans/{uid}/{fileName} {
+      // Read/write only by the owner
+      allow read, write: if isAuthenticated() && request.auth.uid == uid;
+
+      // If you also want to enforce size/MIME, replace the single line above with:
+      // allow read: if isAuthenticated() && request.auth.uid == uid;
+      // allow write: if isAuthenticated()
+      //   && request.auth.uid == uid
+      //   && request.resource.size < 10 * 1024 * 1024
+      //   && request.resource.contentType.matches('application/pdf|application/msword|application/vnd.openxmlformats-officedocument.wordprocessingml.document|image/.*');
+    }
+
+    // Default deny
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

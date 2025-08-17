@@ -1,133 +1,83 @@
 "use client";
 
-import { useAuth } from "@/contexts/AuthContext";
-import { Sidebar } from "@/components/layout/Sidebar";
+import React, { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
-import { Bell, Search, Settings, LogOut } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import Sidebar from "@/components/dashboard/Sidebar";
+import TopBar from "@/components/dashboard/TopBar";
 
 export default function DashboardLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const { userProfile, loading, signOut } = useAuth();
   const router = useRouter();
-  const [notifications, setNotifications] = useState(3); // Mock notification count
+  const { userProfile, loading } = useAuth();
 
+  // Redirect unauthenticated users
   useEffect(() => {
     if (!loading && !userProfile) {
       router.push("/login");
     }
   }, [userProfile, loading, router]);
 
-  const handleSignOut = async () => {
-    try {
-      await signOut();
-      router.push("/login");
-    } catch (error) {
-      console.error("Sign out error:", error);
-    }
-  };
-
+  // Seasonal-accented loading state
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-50 dark:bg-slate-900 flex items-center justify-center transition-colors duration-300">
-        <div className="flex items-center space-x-3">
-          <div className="w-8 h-8 border-4 border-emerald-200 dark:border-emerald-700 border-t-emerald-600 dark:border-t-emerald-400 rounded-full animate-spin"></div>
-          <span className="text-slate-600 dark:text-slate-300 text-lg font-medium">
-            Loading...
-          </span>
+      <div
+        className="min-h-screen flex items-center justify-center transition-colors duration-300
+                   bg-neutral-50 text-neutral-900 dark:bg-neutral-950 dark:text-white"
+        aria-busy="true"
+        aria-live="polite"
+      >
+        <div className="flex items-center gap-3">
+          <div
+            className="h-8 w-8 rounded-full border-4 border-neutral-200 dark:border-neutral-800
+                       border-t-[color:var(--seasonal-primary)] animate-spin"
+            aria-hidden
+          />
+          <span className="text-lg font-medium">Loading…</span>
         </div>
       </div>
     );
   }
 
-  if (!userProfile) {
-    return null; // Will redirect to login
-  }
+  if (!userProfile) return null;
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-900 transition-colors duration-300">
-      <Sidebar />
+    <div
+      className="min-h-screen w-full selection:bg-[var(--seasonal-primary-light)]
+                 selection:text-[var(--seasonal-primary-dark)]
+                 bg-neutral-50 text-neutral-900 dark:bg-neutral-950 dark:text-white"
+    >
+      {/* Skip link for accessibility */}
+      <a
+        href="#main"
+        className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4
+                   z-[100] rounded-md bg-white/90 px-3 py-2 text-sm shadow
+                   dark:bg-neutral-900/90 dark:text-white"
+      >
+        Skip to content
+      </a>
 
-      {/* Header Bar */}
-      <div className="ml-64 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm border-b border-slate-200/50 dark:border-slate-700/50 transition-all duration-300">
-        <div className="flex items-center justify-between px-8 py-4">
-          {/* Search Bar */}
-          <div className="flex-1 max-w-lg">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-500 dark:text-slate-400" />
-              <input
-                type="text"
-                placeholder="Search forms, users, programs..."
-                className="w-full pl-12 pr-4 py-2 bg-slate-100 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg text-slate-900 dark:text-white placeholder-slate-500 dark:placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 dark:focus:ring-emerald-400 focus:border-transparent transition-all duration-300"
-              />
-            </div>
-          </div>
+      {/* Top bar */}
+      <TopBar />
 
-          {/* Header Actions */}
-          <div className="flex items-center space-x-4">
-            {/* Notifications */}
-            <button className="relative p-2 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-all duration-300">
-              <Bell className="w-5 h-5" />
-              {notifications > 0 && (
-                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                  {notifications}
-                </span>
-              )}
-            </button>
+      {/* Shell */}
+      <div className="mx-auto flex w-full max-w-7xl">
+        {/* Sidebar (handles its own desktop/mobile UI) */}
+        <Sidebar role={userProfile.role} />
 
-            {/* Settings */}
-            <button className="p-2 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-all duration-300">
-              <Settings className="w-5 h-5" />
-            </button>
-
-            {/* User Profile Dropdown */}
-            <div className="flex items-center space-x-3">
-              <div className="text-right">
-                <div className="text-sm font-medium text-slate-900 dark:text-white">
-                  {userProfile.displayName}
-                </div>
-                <div className="text-xs text-slate-500 dark:text-slate-400 capitalize">
-                  {userProfile.role.replace("_", " ")}
-                </div>
-              </div>
-              <div className="w-8 h-8 bg-gradient-to-r from-emerald-500 to-blue-500 rounded-full flex items-center justify-center">
-                <span className="text-white font-semibold text-sm">
-                  {userProfile.displayName?.charAt(0) || "U"}
-                </span>
-              </div>
-              <button
-                onClick={handleSignOut}
-                className="p-2 text-slate-600 dark:text-slate-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-all duration-300"
-                title="Sign Out"
-              >
-                <LogOut className="w-4 h-4" />
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Main Content */}
-      <main className="ml-64 min-h-screen">
-        <div className="p-8 bg-gradient-to-br from-slate-50 via-slate-100 to-slate-200 dark:from-slate-900 dark:via-slate-800 dark:to-slate-700 min-h-screen transition-all duration-300">
+        {/* Main content area */}
+        <main
+          id="main"
+          className="flex-1 min-h-[calc(100vh-56px)] p-4 sm:p-6 md:p-8
+                     bg-white/60 backdrop-blur supports-[backdrop-filter]:bg-white/50
+                     dark:bg-neutral-900/40"
+        >
           {children}
-        </div>
-      </main>
-
-      {/* Admin Data Access Banner */}
-      {userProfile.role === "admin" && (
-        <div className="fixed bottom-4 right-4 bg-gradient-to-r from-purple-600 to-indigo-600 text-white p-4 rounded-lg shadow-lg">
-          <div className="flex items-center space-x-2">
-            <Settings className="w-5 h-5" />
-            <span className="text-sm font-medium">
-              Admin Access: Full Data Control
-            </span>
-          </div>
-        </div>
-      )}
+        </main>
+      </div>
     </div>
   );
 }

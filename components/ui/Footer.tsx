@@ -185,16 +185,16 @@ export function Footer() {
                 className="space-y-3"
               >
                 <div className="flex items-center space-x-3">
-                  <Phone
+                  {/* <Phone
                     className="w-4 h-4"
-                    style={{ color: colors.primary }}
-                  />
-                  <a
+                    style={{ color: colors.primary }} 
+                  // /> *}
+                  {/* <a
                     href="tel:0456194251"
                     className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
                   >
                     0456 194 251
-                  </a>
+                  </a> */}
                 </div>
                 <div className="flex items-center space-x-3">
                   <Mail className="w-4 h-4" style={{ color: colors.primary }} />
