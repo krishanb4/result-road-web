@@ -1,3 +1,4 @@
+// app/dashboard/layout.tsx (or wherever this lives)
 "use client";
 
 import { ReactNode, useMemo, useState } from "react";
@@ -14,23 +15,14 @@ import {
   Home,
 } from "lucide-react";
 
-/**
- * NAV ITEMS
- * - Admin gets a full menu
- * - Each role gets a small menu (Home + Form)
- * Adjust hrefs if your route slugs differ.
- */
+/** NAV ITEMS */
 const ADMIN_ITEMS: SideItem[] = [
   {
     href: "/dashboard/admin",
     label: "Overview",
     icon: <BarChart3 size={16} />,
   },
-  {
-    href: "/dashboard/admin/participants",
-    label: "Participants",
-    icon: <Users size={16} />,
-  },
+  { href: "/dashboard/admin/users", label: "Users", icon: <Users size={16} /> },
   {
     href: "/dashboard/admin/programs",
     label: "Programs",
@@ -108,7 +100,6 @@ const ROLE_ITEMS: Record<string, SideItem[]> = {
   ],
 };
 
-/** Map the current path to a friendly title for the Topbar */
 function computeTitle(segments: string[]): string {
   const [first, second] = segments;
 
@@ -134,7 +125,6 @@ function computeTitle(segments: string[]): string {
     coordinator: "Coordinator of Supports",
   };
 
-  // Participant special-case: /assignment/[id]
   if (first === "participant" && second === "assignment")
     return "Participant · Assignment";
 
@@ -150,7 +140,7 @@ export default function DashboardRootLayout({
   children: ReactNode;
 }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const segments = useSelectedLayoutSegments(); // e.g., ["admin","forms"] or ["participant","assignment","abc"]
+  const segments = useSelectedLayoutSegments();
   const theme: any = useSeasonalColors?.() ?? {};
 
   const isAdmin = segments[0] === "admin";
@@ -159,10 +149,10 @@ export default function DashboardRootLayout({
     : ROLE_ITEMS[segments[0] ?? ""] ?? [];
   const title = computeTitle(segments as string[]);
 
-  // Themed background using your ThemeContext (safe fallbacks)
+  // 👉 Light background (supports ThemeContext overrides: lightBg1/lightBg2)
   const bgStyle = useMemo(() => {
-    const base1 = theme?.bg1 ?? "#0B1220";
-    const base2 = theme?.bg2 ?? "#0A0F1F";
+    const base1 = theme?.lightBg1 ?? "#F8FAFC"; // slate-50-ish
+    const base2 = theme?.lightBg2 ?? "#EEF2FF"; // indigo-50-ish
     return { background: `linear-gradient(135deg, ${base1}, ${base2})` };
   }, [theme]);
 
@@ -176,7 +166,8 @@ export default function DashboardRootLayout({
           onClose={() => setSidebarOpen(false)}
         />
         <main className="flex-1 p-4 md:p-8">
-          <div className="rounded-2xl bg-white/[0.03] border border-white/10 p-4 md:p-6">
+          {/* Keep a darker card so existing components with text-white remain readable */}
+          <div className="rounded-2xl bg-slate-900/90 border border-white/10 p-4 md:p-6">
             {children}
           </div>
         </main>

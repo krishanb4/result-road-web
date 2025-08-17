@@ -1,9 +1,9 @@
 "use client";
 import { useEffect, useState } from "react";
 import VideoGate from "@/components/dashboard/VideoGate";
-import FormBuilder from "@/components/dashboard/FormBuilder";
 import { auth } from "@/lib/firebase";
 import { onAuthStateChanged } from "firebase/auth";
+import FitnessPartnerFeedbackForm from "@/components/forms/FitnessPartnerFeedbackForm";
 
 export default function FitnessPartnerDashboard() {
   const [uid, setUid] = useState("");
@@ -13,9 +13,9 @@ export default function FitnessPartnerDashboard() {
       <VideoGate
         uid={uid}
         role="fitness_partner"
-        videoUrl="/videos/fitness-partner-intro.mp4"
+        videoUrl="/videos/fitness-partners.mov"
       >
-        <FormBuilder uid={uid} type="fitness_partner_group_feedback" />
+        <FitnessPartnerFeedbackForm uid={uid} />
       </VideoGate>
     </div>
   );
