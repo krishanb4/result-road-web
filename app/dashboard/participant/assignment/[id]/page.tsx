@@ -1,7 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import LayoutShell from "@/components/dashboard/LayoutShell";
 import { auth, db } from "@/lib/firebase";
 import { onAuthStateChanged } from "firebase/auth";
 import {
@@ -43,7 +42,7 @@ export default function AssignmentView() {
   }
 
   return (
-    <LayoutShell role="participant" title={program?.title || "Program"}>
+    <div>
       {!program ? (
         <div className="text-white/70">Loading...</div>
       ) : (
@@ -78,6 +77,6 @@ export default function AssignmentView() {
           ))}
         </ul>
       )}
-    </LayoutShell>
+    </div>
   );
 }

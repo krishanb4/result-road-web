@@ -1,20 +1,24 @@
+// app/dashboard/admin/registrations/page.tsx
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
 import {
   collection,
-  getDocs,
   onSnapshot,
   query,
   orderBy,
   where,
   addDoc,
-  serverTimestamp,
   updateDoc,
   doc,
+  getDocs,
+  getDoc,
+  serverTimestamp,
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import Modal from "@/components/ui/Modal";
+
+/* ---------------- Types ---------------- */
 
 type SimpleUser = {
   id: string;
@@ -27,14 +31,17 @@ type Row = {
   id: string;
   source: "registrations" | "carePlans";
   createdAt?: any;
-  // common fields (use what you have)
-  name?: string;
-  email?: string;
+  // Common display fields (fill what you have)
+  name?: string | null;
+  email?: string | null;
   participantId?: string | null;
-  goals?: string;
-  medicalInfo?: string;
-  planDocumentUrl?: string;
+  // carePlans specifics
+  goals?: string | null;
+  medicalInfo?: string | null;
+  planDocumentUrl?: string | null;
 };
+
+/* ---------------- Utils ---------------- */
 
 function fmtWhen(d?: any) {
   const date = d?.toDate?.() || (d instanceof Date ? d : null);
@@ -46,9 +53,18 @@ function fmtWhen(d?: any) {
     : "—";
 }
 
+/* --------------- Page ------------------ */
+
 export default function AdminRegistrations() {
-  const [rows, setRows] = useState<Row[]>([]);
+  // live rows from each collection
+  const [regRows, setRegRows] = useState<Row[]>([]);
+  const [careRows, setCareRows] = useState<Row[]>([]);
+
+  // participants & extra user lookups (by UID)
   const [participants, setParticipants] = useState<SimpleUser[]>([]);
+  const [extraUsers, setExtraUsers] = useState<Record<string, SimpleUser>>({}); // fetched by UID if not in participants
+
+  // programs
   const [programs, setPrograms] = useState<Program[]>([]);
 
   // Link modal
@@ -61,11 +77,14 @@ export default function AdminRegistrations() {
   const [assignOpen, setAssignOpen] = useState(false);
   const [assignRow, setAssignRow] = useState<Row | null>(null);
   const [programId, setProgramId] = useState("");
+  const [assignEmail, setAssignEmail] = useState("");
 
-  // Reconcile in-progress
+  // Reconcile busy state
   const [reconBusy, setReconBusy] = useState(false);
 
-  // Load programs (active first)
+  /* ------------- Live data ------------- */
+
+  // Programs (ordered by title)
   useEffect(() => {
     const unsub = onSnapshot(
       query(collection(db, "programs"), orderBy("title", "asc")),
@@ -76,7 +95,7 @@ export default function AdminRegistrations() {
     return () => unsub();
   }, []);
 
-  // Load participants
+  // Participants (role == participant)
   useEffect(() => {
     const qP = query(
       collection(db, "users"),
@@ -93,54 +112,105 @@ export default function AdminRegistrations() {
     return () => unsub();
   }, []);
 
-  // Load registrations + carePlans and merge
+  // Registrations (newest first)
   useEffect(() => {
-    (async () => {
-      const [regSnap, careSnap] = await Promise.all([
-        getDocs(
-          query(collection(db, "registrations"), orderBy("createdAt", "desc"))
-        ).catch(() => null),
-        getDocs(
-          query(collection(db, "carePlans"), orderBy("createdAt", "desc"))
-        ).catch(() => null),
-      ]);
-
-      const regs: Row[] = regSnap
-        ? regSnap.docs.map((d) => ({
-            id: d.id,
-            source: "registrations",
-            ...(d.data() as any),
-          }))
-        : [];
-
-      const cares: Row[] = careSnap
-        ? careSnap.docs.map((d) => {
-            const v: any = d.data();
-            return {
-              id: d.id,
-              source: "carePlans",
-              createdAt: v.createdAt,
-              participantId: v.participantId ?? null,
-              email: v.email ?? null, // if you store email there
-              name: v.name ?? null, // if you store name there
-              goals: v.goals,
-              medicalInfo: v.medicalInfo,
-              planDocumentUrl: v.planDocumentUrl,
-            };
-          })
-        : [];
-
-      // sort newest first and keep reasonable size
-      const merged = [...regs, ...cares].sort(
-        (a, b) =>
-          (b.createdAt?.toMillis?.() || 0) - (a.createdAt?.toMillis?.() || 0)
-      );
-      setRows(merged);
-      console.log(merged);
-    })();
+    const q = query(
+      collection(db, "registrations"),
+      orderBy("createdAt", "desc")
+    );
+    const unsub = onSnapshot(
+      q,
+      (snap) => {
+        const rows: Row[] = snap.docs.map((d) => ({
+          id: d.id,
+          source: "registrations",
+          ...(d.data() as any),
+        }));
+        setRegRows(rows);
+      },
+      () => setRegRows([]) // silently ignore if collection doesn't exist
+    );
+    return () => unsub();
   }, []);
 
-  /* ------------- Link submission -> participant ------------- */
+  // Care Plans (newest first)
+  useEffect(() => {
+    const q = query(collection(db, "carePlans"), orderBy("createdAt", "desc"));
+    const unsub = onSnapshot(
+      q,
+      (snap) => {
+        const rows: Row[] = snap.docs.map((d) => {
+          const v: any = d.data();
+          return {
+            id: d.id,
+            source: "carePlans",
+            createdAt: v.createdAt,
+            participantId: v.participantId ?? null,
+            email: v.email ?? null,
+            name: v.name ?? null,
+            goals: v.goals ?? null,
+            medicalInfo: v.medicalInfo ?? null,
+            planDocumentUrl: v.planDocumentUrl ?? null,
+          };
+        });
+        setCareRows(rows);
+      },
+      () => setCareRows([]) // ignore if collection doesn't exist
+    );
+    return () => unsub();
+  }, []);
+
+  // Merge rows & sort
+  const merged = useMemo(() => {
+    const all = [...regRows, ...careRows];
+    return all.sort(
+      (a, b) =>
+        (b.createdAt?.toMillis?.() || 0) - (a.createdAt?.toMillis?.() || 0)
+    );
+  }, [regRows, careRows]);
+
+  // Build quick lookup for participants
+  const participantsById = useMemo(
+    () => Object.fromEntries(participants.map((u) => [u.id, u])),
+    [participants]
+  );
+
+  // Enrich missing users by participantId (if not in participants list)
+  useEffect(() => {
+    const needed = Array.from(
+      new Set(merged.map((r) => r.participantId).filter(Boolean) as string[])
+    ).filter((uid) => !participantsById[uid] && !extraUsers[uid]);
+
+    if (needed.length === 0) return;
+
+    (async () => {
+      const fetched: Record<string, SimpleUser> = {};
+      await Promise.all(
+        needed.map(async (uid) => {
+          const snap = await getDoc(doc(db, "users", uid)).catch(() => null);
+          if (snap && snap.exists()) {
+            const d = snap.data() as any;
+            fetched[uid] = {
+              id: uid,
+              email: d?.email ?? null,
+              displayName: d?.displayName ?? null,
+            };
+          }
+        })
+      );
+      if (Object.keys(fetched).length) {
+        setExtraUsers((prev) => ({ ...prev, ...fetched }));
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [merged, participantsById]);
+
+  const userLookup: Record<string, SimpleUser> = useMemo(
+    () => ({ ...participantsById, ...extraUsers }),
+    [participantsById, extraUsers]
+  );
+
+  /* ------------- Link submission -> user ------------- */
 
   function openLink(r: Row) {
     setLinkRow(r);
@@ -151,20 +221,14 @@ export default function AdminRegistrations() {
 
   async function doLink() {
     if (!linkRow) return;
-
-    // Strategy:
-    // - If selectedUid provided: update the carePlans/registrations doc with participantId + email (optional)
-    // - Else if manualEmail given: just store email on the doc; assignments can be created as "pending"
     const targetColl =
       linkRow.source === "carePlans" ? "carePlans" : "registrations";
     const ref = doc(db, targetColl, linkRow.id);
-
     await updateDoc(ref, {
       participantId: selectedUid || null,
       email: manualEmail || null,
       updatedAt: serverTimestamp(),
     });
-
     setLinkOpen(false);
   }
 
@@ -173,46 +237,44 @@ export default function AdminRegistrations() {
   function openAssign(r: Row) {
     setAssignRow(r);
     setProgramId("");
+    setAssignEmail(r.email || "");
     setAssignOpen(true);
   }
 
   async function doAssign() {
     if (!assignRow || !programId) return;
 
-    // If we have a linked participant, create a normal assignment.
-    // Otherwise create a *pending* assignment with participantEmail,
-    // which we’ll reconcile later when the user signs up.
+    const programTitle =
+      programs.find((p) => p.id === programId)?.title || programId;
     const hasUid =
       !!assignRow.participantId && assignRow.participantId !== "null";
 
     if (hasUid) {
+      // direct assignment to participantId
       await addDoc(collection(db, "assignments"), {
         participantId: assignRow.participantId,
         programId,
-        programTitle:
-          programs.find((p) => p.id === programId)?.title || programId,
+        programTitle,
         assignedAt: serverTimestamp(),
         assignedBy: "admin",
         status: "assigned",
-        // optional link back to submission
         registrationRef: { id: assignRow.id, source: assignRow.source },
       });
     } else {
       // pending assignment by email
-      const email = assignRow.email || manualEmail;
+      const email = assignEmail?.trim();
       if (!email) {
-        alert("This submission is not linked to a user and has no email.");
+        alert("Please provide an email to create a pending assignment.");
         return;
       }
       await addDoc(collection(db, "assignments"), {
         participantId: null,
         participantEmail: email,
         programId,
-        programTitle:
-          programs.find((p) => p.id === programId)?.title || programId,
+        programTitle,
         assignedAt: serverTimestamp(),
         assignedBy: "admin",
-        status: "pending", // mark pending until reconciled
+        status: "pending",
         registrationRef: { id: assignRow.id, source: assignRow.source },
       });
     }
@@ -221,28 +283,25 @@ export default function AdminRegistrations() {
   }
 
   /* ------------- Reconcile pending assignments ------------- */
-  // Find assignments with participantId=null but participantEmail set,
-  // and if a user with that email exists, attach their uid.
-
+  // Matches assignments with status "pending" where participantEmail matches a user's email.
   async function reconcilePending() {
     setReconBusy(true);
     try {
-      // load all participants into a lookup by email (lowercased)
-      const byEmail = new Map(
-        participants
-          .filter((p) => p.email)
-          .map((p) => [String(p.email).toLowerCase(), p.id])
-      );
+      // Build email -> uid map from ALL users (not just role=participant)
+      const allUsersSnap = await getDocs(collection(db, "users"));
+      const byEmail = new Map<string, string>();
+      allUsersSnap.forEach((d) => {
+        const v: any = d.data();
+        if (v?.email) byEmail.set(String(v.email).toLowerCase(), d.id);
+      });
 
-      // load pending assignments
-      const pendingQ = query(
-        collection(db, "assignments"),
-        where("status", "==", "pending")
+      // Load pending
+      const pendSnap = await getDocs(
+        query(collection(db, "assignments"), where("status", "==", "pending"))
       );
-      const snap = await getDocs(pendingQ);
 
       let fixed = 0;
-      for (const d of snap.docs) {
+      for (const d of pendSnap.docs) {
         const a: any = d.data();
         const email = String(a.participantEmail || "").toLowerCase();
         const uid = byEmail.get(email);
@@ -261,11 +320,6 @@ export default function AdminRegistrations() {
     }
   }
 
-  const participantsById = useMemo(
-    () => Object.fromEntries(participants.map((u) => [u.id, u])),
-    [participants]
-  );
-
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -273,7 +327,7 @@ export default function AdminRegistrations() {
         <button
           onClick={reconcilePending}
           disabled={reconBusy}
-          className="px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/15"
+          className="px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/15 disabled:opacity-60"
         >
           {reconBusy ? "Reconciling…" : "Reconcile pending assignments"}
         </button>
@@ -293,15 +347,19 @@ export default function AdminRegistrations() {
             </tr>
           </thead>
           <tbody className="divide-y divide-white/10">
-            {rows.map((r) => {
-              const user = r.participantId
-                ? participantsById[r.participantId]
-                : null;
+            {merged.map((r) => {
+              const user =
+                (r.participantId && userLookup[r.participantId]) || null;
+
               return (
                 <tr key={`${r.source}-${r.id}`}>
                   <td className="py-2 px-3 align-top">{r.source}</td>
-                  <td className="py-2 px-3 align-top">{r.name || "—"}</td>
-                  <td className="py-2 px-3 align-top">{r.email || "—"}</td>
+                  <td className="py-2 px-3 align-top">
+                    {r.name || user?.displayName || "—"}
+                  </td>
+                  <td className="py-2 px-3 align-top">
+                    {r.email || user?.email || "—"}
+                  </td>
                   <td className="py-2 px-3 align-top">
                     {user ? (
                       user.displayName || user.email || r.participantId
@@ -346,7 +404,8 @@ export default function AdminRegistrations() {
                 </tr>
               );
             })}
-            {rows.length === 0 && (
+
+            {merged.length === 0 && (
               <tr>
                 <td colSpan={7} className="py-8 text-center text-white/60">
                   No submissions found.
@@ -393,8 +452,9 @@ export default function AdminRegistrations() {
               onChange={(e) => setManualEmail(e.target.value)}
             />
             <p className="text-xs text-white/60">
-              If the person has not signed up yet, keep the email here. You can
-              still create a pending assignment and reconcile later.
+              If the person hasn’t signed up yet, keep the email here and create
+              a pending assignment. Later click “Reconcile pending assignments”
+              to auto-attach it when they sign up.
             </p>
           </div>
 
@@ -438,13 +498,24 @@ export default function AdminRegistrations() {
             </select>
           </div>
 
+          {/* If not linked, allow entering the email used for pending assignment */}
           {!assignRow?.participantId && (
-            <p className="text-xs text-white/60">
-              This submission is not linked to a user. We’ll create a{" "}
-              <b>pending</b> assignment using the submission’s email. After the
-              person signs up, click “Reconcile pending assignments” to attach
-              it automatically.
-            </p>
+            <div className="space-y-1">
+              <label className="text-sm text-white/80">
+                Email for pending assignment
+              </label>
+              <input
+                className="w-full rounded-lg bg-slate-900 border border-white/10 p-2"
+                placeholder="email@example.com"
+                value={assignEmail}
+                onChange={(e) => setAssignEmail(e.target.value)}
+              />
+              <p className="text-xs text-white/60">
+                This submission isn’t linked to a user. We’ll create a{" "}
+                <b>pending</b> assignment using this email and you can reconcile
+                later.
+              </p>
+            </div>
           )}
 
           <div className="flex justify-end gap-2">
@@ -456,7 +527,9 @@ export default function AdminRegistrations() {
             </button>
             <button
               className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 disabled:opacity-60"
-              disabled={!programId}
+              disabled={
+                !programId || (!assignRow?.participantId && !assignEmail.trim())
+              }
               onClick={doAssign}
             >
               Assign

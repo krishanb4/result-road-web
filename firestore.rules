@@ -60,15 +60,16 @@ service cloud.firestore {
       allow create, update, delete: if isAdmin();
     }
 
+   // carePlans
     match /carePlans/{id} {
-      // user can create their own care plan
-      allow create: if request.auth != null && request.resource.data.participantId == request.auth.uid;
-
-      // user can read their own; admin can read all (assuming your isAdmin() helper exists)
-      allow read: if (request.auth != null && resource.data.participantId == request.auth.uid) || isAdmin();
-
-      // updates/deletes by admin only
+      allow read: if isAdmin() || (isAuthed() && resource.data.participantId == me());
+      allow create: if isAuthed() && request.resource.data.participantId == me();
       allow update, delete: if isAdmin();
+    }
+    // assignments: admin create/update/delete
+    match /assignments/{id} {
+      allow read: if isAdmin() || (isAuthed() && resource.data.participantId == me());
+      allow create, update, delete: if isAdmin();
     }
 
 
