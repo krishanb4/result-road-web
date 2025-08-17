@@ -13,7 +13,7 @@ export default function CoordinatorDashboard() {
       <VideoGate
         uid={uid}
         role="coordinator"
-        videoUrl="/videos/coordinator-intro.mp4"
+        videoUrl="/videos/coordinator.mov"
       >
         <FormBuilder uid={uid} type="coordinator_progress_overview" />
       </VideoGate>

@@ -3,75 +3,88 @@ service cloud.firestore {
   match /databases/{database}/documents {
     function isAuthed() { return request.auth != null; }
     function me() { return request.auth.uid; }
-    function userDoc(uid) { return get(/databases/$(database)/documents/users/$(uid)); }
+    function userDoc(uid) {
+      return get(/databases/$(database)/documents/users/$(uid));
+    }
     function isAdmin() {
       return isAuthed() && userDoc(me()).data.role == 'admin';
     }
-
-    // ---- Users
-    match /users/{userId} {
-      allow read: if isAdmin() || (isAuthed() && userId == me());
-      allow create: if isAuthed() && userId == me();
-      allow update: if isAdmin() || (isAuthed() && userId == me());
+    function isFitnessPartner() {
+      return isAuthed() && userDoc(me()).data.role == 'fitness_partner';
     }
 
-    // ---- Intro video acknowledgement (one per role per user)
+    // === Users ===
+    // Allow: self, admin, or any fitness partner (to resolve participant names)
+    match /users/{userId} {
+      allow read: if isAdmin() || (isAuthed() && (userId == me() || isFitnessPartner()));
+      allow create: if isAuthed() && userId == me();
+      allow update: if isAdmin() || (isAuthed() && userId == me());
+      // (No delete by default)
+    }
+
+    // === Intro video acknowledgements ===
     match /acknowledgements/{ackId} {
       allow read: if isAdmin() || isAuthed();
       allow create, update: if isAuthed() && request.resource.data.uid == me();
       allow delete: if isAdmin();
     }
 
-    // ---- Public registrations from /app/register
+    // === Public registrations (/app/register) ===
     match /registrations/{id} {
-      allow create: if true;               // public can submit
+      allow create: if true; // public can submit
       allow read, update, delete: if isAdmin();
     }
 
-    // ---- Programs CRUD
+    // === Programs ===
+    // Keep reads open to authed (your UI already filters by fitnessPartnerId)
     match /programs/{programId} {
       allow read: if isAuthed();
       allow create, update, delete: if isAdmin();
     }
 
-    // ---- Admin assigns a program to a participant
-    match /assignments/{id} {
-      allow read: if isAdmin() || (isAuthed() && resource.data.participantId == me());
+    // === Assignments ===
+    // Read if:
+    // - admin, OR
+    // - participant is reading their own assignment, OR
+    // - fitness partner reads assignments for a program they own
+    match /assignments/{assignmentId} {
+      allow read: if isAdmin()
+                  || (isAuthed() && resource.data.participantId == me())
+                  || (isFitnessPartner()
+                      && get(/databases/$(database)/documents/programs/$(resource.data.programId))
+                           .data.fitnessPartnerId == me());
       allow create, update, delete: if isAdmin();
     }
 
-    // ---- Participant module progress
+    // === Progress ===
     match /progress/{id} {
       allow read: if isAdmin() || (isAuthed() && resource.data.participantId == me());
       allow create, update: if isAuthed() && request.resource.data.participantId == me();
       allow delete: if isAdmin();
     }
 
-    // ---- Role forms (unified bucket)
-    // types:
-    //  service_provider_feedback, fitness_partner_group_feedback,
-    //  support_worker_monitoring, coordinator_progress_overview
-    match /forms/{id} {
-      allow create: if isAuthed() && request.resource.data.uid == me();
-      allow read, update, delete: if isAdmin();
-    }
-    match /programs/{programId} {
-      allow read: if isAuthed(); // keep as-is for now
-      allow create, update, delete: if isAdmin();
-    }
-
-   // carePlans
+    // === Care Plans ===
     match /carePlans/{id} {
       allow read: if isAdmin() || (isAuthed() && resource.data.participantId == me());
       allow create: if isAuthed() && request.resource.data.participantId == me();
       allow update, delete: if isAdmin();
     }
-    // assignments: admin create/update/delete
-    match /assignments/{id} {
-      allow read: if isAdmin() || (isAuthed() && resource.data.participantId == me());
-      allow create, update, delete: if isAdmin();
+
+    // === Forms (unified bucket) ===
+    // Create by the owner. Admin can read/update/delete.
+    match /forms/{formId} {
+      allow create: if isAuthed() && request.resource.data.uid == me();
+      allow read, update, delete: if isAdmin();
     }
 
-
+    // === Fitness Partner Feedback (stricter create) ===
+    // Optional: keep this stricter variant for the specific type.
+    // (If you use the general /forms rule above, this block can be omitted.)
+    match /forms/{formId} {
+      allow create: if isAuthed()
+                    && request.resource.data.uid == me()
+                    && request.resource.data.type == 'fitness_partner_feedback';
+      // read/update/delete already handled by admin rule above
+    }
   }
 }

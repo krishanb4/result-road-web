@@ -9,6 +9,12 @@
             "bucket": "result-road.firebasestorage.app"
         }
     ],
+    "functions": [
+        {
+            "source": "functions",
+            "codebase": "default"
+        }
+    ],
     "hosting": {
         "public": "out",
         "ignore": [

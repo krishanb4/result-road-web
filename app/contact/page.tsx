@@ -68,26 +68,34 @@ const teamMembers = [
     role: "Program Director",
     email: "hello@resultroad.com.au",
     phone: "",
-    specialties: ["Program Development", "Community Outreach", "Partnerships"],
+    specialties: [
+      "Program Innovation",
+      "Strategic Leadership",
+      "Inclusive Service Design",
+    ],
     image: "/team/nathan.jpg",
   },
   {
     name: "Liz",
-    role: "Lead Coach",
+    role: "Behaviour Therapist",
     email: "hello@resultroad.com.au",
-    phone: "0456 194 252",
-    specialties: ["Adaptive Training", "Group Programs", "Assessment"],
+    phone: "",
+    specialties: [
+      "Positive Behaviour Support",
+      "Complex Needs Management",
+      "Individualised Intervention Planning",
+    ],
     image: "/team/liz.jpg",
   },
   {
     name: "Sean",
-    role: "Wellness Coordinator",
+    role: "Business Development Manager",
     email: "hello@resultroad.com.au",
-    phone: "0456 194 253",
+    phone: "",
     specialties: [
-      "Mental Health Support",
-      "Wellness Planning",
-      "Family Services",
+      "Community Partnerships",
+      "Program Growth",
+      "Client Engagement",
     ],
     image: "/team/sean.jpg",
   },
@@ -827,13 +835,15 @@ export default function ContactPage() {
                     <Mail className="w-4 h-4" />
                     <span>{member.email}</span>
                   </div>
-                  <div
-                    className="flex items-center justify-center space-x-2"
-                    style={{ color: seasonalColors.textSecondary }}
-                  >
-                    <Phone className="w-4 h-4" />
-                    <span>{member.phone}</span>
-                  </div>
+                  {member.phone && (
+                    <div
+                      className="flex items-center justify-center space-x-2"
+                      style={{ color: seasonalColors.textSecondary }}
+                    >
+                      <Phone className="w-4 h-4" />
+                      <span>{member.phone}</span>
+                    </div>
+                  )}
                 </div>
 
                 <div className="relative z-10">
