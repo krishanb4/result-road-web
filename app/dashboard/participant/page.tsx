@@ -1,6 +1,5 @@
 "use client";
 import { useEffect, useState } from "react";
-import LayoutShell from "@/components/dashboard/LayoutShell";
 import VideoGate from "@/components/dashboard/VideoGate";
 import { auth, db } from "@/lib/firebase";
 import { onAuthStateChanged } from "firebase/auth";
@@ -28,7 +27,7 @@ export default function ParticipantDashboard() {
   }, []);
 
   return (
-    <LayoutShell role="participant" title="Participant">
+    <div>
       <VideoGate
         uid={uid}
         role="participant"
@@ -66,6 +65,6 @@ export default function ParticipantDashboard() {
           </div>
         </div>
       </VideoGate>
-    </LayoutShell>
+    </div>
   );
 }

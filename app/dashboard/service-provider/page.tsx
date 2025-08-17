@@ -1,6 +1,5 @@
 "use client";
 import { useEffect, useState } from "react";
-import LayoutShell from "@/components/dashboard/LayoutShell";
 import VideoGate from "@/components/dashboard/VideoGate";
 import FormBuilder from "@/components/dashboard/FormBuilder";
 import { auth } from "@/lib/firebase";
@@ -10,7 +9,7 @@ export default function ServiceProviderDashboard() {
   const [uid, setUid] = useState("");
   useEffect(() => onAuthStateChanged(auth, (u) => u && setUid(u.uid)), []);
   return (
-    <LayoutShell role="service_provider" title="Service Provider">
+    <div>
       <VideoGate
         uid={uid}
         role="service_provider"
@@ -18,6 +17,6 @@ export default function ServiceProviderDashboard() {
       >
         <FormBuilder uid={uid} type="service_provider_feedback" />
       </VideoGate>
-    </LayoutShell>
+    </div>
   );
 }
