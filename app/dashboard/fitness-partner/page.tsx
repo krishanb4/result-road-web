@@ -1,22 +1,23 @@
 "use client";
-import { useAuth } from "@/contexts/AuthContext";
-import IntroGate from "../_components/IntroGate";
-import Link from "next/link";
+import { useEffect, useState } from "react";
+import LayoutShell from "@/components/dashboard/LayoutShell";
+import VideoGate from "@/components/dashboard/VideoGate";
+import FormBuilder from "@/components/dashboard/FormBuilder";
+import { auth } from "@/lib/firebase";
+import { onAuthStateChanged } from "firebase/auth";
 
-export default function FitnessPartnerHome() {
-  const { userProfile } = useAuth();
-  if (!userProfile) return null;
+export default function FitnessPartnerDashboard() {
+  const [uid, setUid] = useState("");
+  useEffect(() => onAuthStateChanged(auth, (u) => u && setUid(u.uid)), []);
   return (
-    <IntroGate uid={userProfile.uid} role={userProfile.role}>
-      <div className="p-6 space-y-4">
-        <h1 className="text-2xl font-semibold">Group Feedback</h1>
-        <Link
-          href="/dashboard/forms/fitness-partner"
-          className="btn btn-primary"
-        >
-          Open Group Feedback Form
-        </Link>
-      </div>
-    </IntroGate>
+    <LayoutShell role="fitness_partner" title="Fitness Partner">
+      <VideoGate
+        uid={uid}
+        role="fitness_partner"
+        videoUrl="/videos/fitness-partner-intro.mp4"
+      >
+        <FormBuilder uid={uid} type="fitness_partner_group_feedback" />
+      </VideoGate>
+    </LayoutShell>
   );
 }

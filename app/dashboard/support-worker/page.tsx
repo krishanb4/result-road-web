@@ -1,25 +1,23 @@
 "use client";
-import { useAuth } from "@/contexts/AuthContext";
-import IntroGate from "../_components/IntroGate";
-import Link from "next/link";
+import { useEffect, useState } from "react";
+import LayoutShell from "@/components/dashboard/LayoutShell";
+import VideoGate from "@/components/dashboard/VideoGate";
+import FormBuilder from "@/components/dashboard/FormBuilder";
+import { auth } from "@/lib/firebase";
+import { onAuthStateChanged } from "firebase/auth";
 
-export default function SupportWorkerHome() {
-  const { userProfile } = useAuth();
-  if (!userProfile) return null;
+export default function SupportWorkerDashboard() {
+  const [uid, setUid] = useState("");
+  useEffect(() => onAuthStateChanged(auth, (u) => u && setUid(u.uid)), []);
   return (
-    <IntroGate uid={userProfile.uid} role={userProfile.role}>
-      <div className="p-6 space-y-4">
-        <h1 className="text-2xl font-semibold">Client Management (Weekly)</h1>
-        <p className="text-slate-600">
-          Submit this week's monitoring form. Admin will review all submissions.
-        </p>
-        <Link
-          href="/dashboard/forms/support-worker"
-          className="btn btn-primary"
-        >
-          Start Weekly Form
-        </Link>
-      </div>
-    </IntroGate>
+    <LayoutShell role="support_worker" title="Support Worker">
+      <VideoGate
+        uid={uid}
+        role="support_worker"
+        videoUrl="/videos/support-worker-intro.mp4"
+      >
+        <FormBuilder uid={uid} type="support_worker_monitoring" />
+      </VideoGate>
+    </LayoutShell>
   );
 }

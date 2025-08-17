@@ -6,17 +6,17 @@ import FormBuilder from "@/components/dashboard/FormBuilder";
 import { auth } from "@/lib/firebase";
 import { onAuthStateChanged } from "firebase/auth";
 
-export default function ServiceProviderDashboard() {
+export default function CoordinatorDashboard() {
   const [uid, setUid] = useState("");
   useEffect(() => onAuthStateChanged(auth, (u) => u && setUid(u.uid)), []);
   return (
-    <LayoutShell role="service_provider" title="Service Provider">
+    <LayoutShell role="coordinator" title="Coordinator">
       <VideoGate
         uid={uid}
-        role="service_provider"
-        videoUrl="/videos/service-provider-intro.mp4"
+        role="coordinator"
+        videoUrl="/videos/coordinator-intro.mp4"
       >
-        <FormBuilder uid={uid} type="service_provider_feedback" />
+        <FormBuilder uid={uid} type="coordinator_progress_overview" />
       </VideoGate>
     </LayoutShell>
   );
