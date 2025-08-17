@@ -1,81 +1,184 @@
 "use client";
 
-import React, { useEffect } from "react";
-import { useRouter } from "next/navigation";
-import { useAuth } from "@/contexts/AuthContext";
-import Sidebar from "@/components/dashboard/Sidebar";
-import TopBar from "@/components/dashboard/TopBar";
+import { ReactNode, useMemo, useState } from "react";
+import { useSelectedLayoutSegments } from "next/navigation";
+import Topbar from "@/components/dashboard/TopBar";
+import Sidebar, { SideItem } from "@/components/dashboard/Sidebar";
+import { useSeasonalColors } from "@/contexts/ThemeContext";
+import {
+  BarChart3,
+  Users,
+  FolderKanban,
+  ClipboardList,
+  FileText,
+  Home,
+} from "lucide-react";
 
-export default function DashboardLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
-  const router = useRouter();
-  const { userProfile, loading } = useAuth();
+/**
+ * NAV ITEMS
+ * - Admin gets a full menu
+ * - Each role gets a small menu (Home + Form)
+ * Adjust hrefs if your route slugs differ.
+ */
+const ADMIN_ITEMS: SideItem[] = [
+  {
+    href: "/dashboard/admin",
+    label: "Overview",
+    icon: <BarChart3 size={16} />,
+  },
+  {
+    href: "/dashboard/admin/participants",
+    label: "Participants",
+    icon: <Users size={16} />,
+  },
+  {
+    href: "/dashboard/admin/programs",
+    label: "Programs",
+    icon: <FolderKanban size={16} />,
+  },
+  {
+    href: "/dashboard/admin/registrations",
+    label: "Registrations",
+    icon: <ClipboardList size={16} />,
+  },
+  {
+    href: "/dashboard/admin/forms",
+    label: "Forms",
+    icon: <FileText size={16} />,
+  },
+  {
+    href: "/dashboard/admin/progress",
+    label: "Progress",
+    icon: <BarChart3 size={16} />,
+  },
+];
 
-  // Redirect unauthenticated users
-  useEffect(() => {
-    if (!loading && !userProfile) {
-      router.push("/login");
-    }
-  }, [userProfile, loading, router]);
+const ROLE_ITEMS: Record<string, SideItem[]> = {
+  participant: [
+    { href: "/dashboard/participant", label: "Home", icon: <Home size={16} /> },
+    {
+      href: "/dashboard/participant/form",
+      label: "Form",
+      icon: <FileText size={16} />,
+    },
+  ],
+  "service-provider": [
+    {
+      href: "/dashboard/service-provider",
+      label: "Home",
+      icon: <Home size={16} />,
+    },
+    {
+      href: "/dashboard/service-provider/form",
+      label: "Form",
+      icon: <FileText size={16} />,
+    },
+  ],
+  "fitness-partner": [
+    {
+      href: "/dashboard/fitness-partner",
+      label: "Home",
+      icon: <Home size={16} />,
+    },
+    {
+      href: "/dashboard/fitness-partner/form",
+      label: "Form",
+      icon: <FileText size={16} />,
+    },
+  ],
+  "support-worker": [
+    {
+      href: "/dashboard/support-worker",
+      label: "Home",
+      icon: <Home size={16} />,
+    },
+    {
+      href: "/dashboard/support-worker/form",
+      label: "Form",
+      icon: <FileText size={16} />,
+    },
+  ],
+  coordinator: [
+    { href: "/dashboard/coordinator", label: "Home", icon: <Home size={16} /> },
+    {
+      href: "/dashboard/coordinator/form",
+      label: "Form",
+      icon: <FileText size={16} />,
+    },
+  ],
+};
 
-  // Seasonal-accented loading state
-  if (loading) {
-    return (
-      <div
-        className="min-h-screen flex items-center justify-center transition-colors duration-300
-                   bg-neutral-50 text-neutral-900 dark:bg-neutral-950 dark:text-white"
-        aria-busy="true"
-        aria-live="polite"
-      >
-        <div className="flex items-center gap-3">
-          <div
-            className="h-8 w-8 rounded-full border-4 border-neutral-200 dark:border-neutral-800
-                       border-t-[color:var(--seasonal-primary)] animate-spin"
-            aria-hidden
-          />
-          <span className="text-lg font-medium">Loading…</span>
-        </div>
-      </div>
-    );
+/** Map the current path to a friendly title for the Topbar */
+function computeTitle(segments: string[]): string {
+  const [first, second] = segments;
+
+  if (first === "admin") {
+    const map: Record<string, string> = {
+      undefined: "Overview",
+      "": "Overview",
+      participants: "Participants",
+      programs: "Programs",
+      registrations: "Registrations",
+      forms: "Forms",
+      progress: "Progress",
+    };
+    const sub = map[second ?? ""] ?? "Overview";
+    return `Admin · ${sub}`;
   }
 
-  if (!userProfile) return null;
+  const roleTitle: Record<string, string> = {
+    participant: "Participant",
+    "service-provider": "Service Provider",
+    "fitness-partner": "Fitness Partner",
+    "support-worker": "Support Worker",
+    coordinator: "Coordinator of Supports",
+  };
+
+  // Participant special-case: /assignment/[id]
+  if (first === "participant" && second === "assignment")
+    return "Participant · Assignment";
+
+  const base = roleTitle[first] ?? "Dashboard";
+  if (!second) return base;
+  if (second === "form") return `${base} · Form`;
+  return base;
+}
+
+export default function DashboardRootLayout({
+  children,
+}: {
+  children: ReactNode;
+}) {
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const segments = useSelectedLayoutSegments(); // e.g., ["admin","forms"] or ["participant","assignment","abc"]
+  const theme: any = useSeasonalColors?.() ?? {};
+
+  const isAdmin = segments[0] === "admin";
+  const items: SideItem[] = isAdmin
+    ? ADMIN_ITEMS
+    : ROLE_ITEMS[segments[0] ?? ""] ?? [];
+  const title = computeTitle(segments as string[]);
+
+  // Themed background using your ThemeContext (safe fallbacks)
+  const bgStyle = useMemo(() => {
+    const base1 = theme?.bg1 ?? "#0B1220";
+    const base2 = theme?.bg2 ?? "#0A0F1F";
+    return { background: `linear-gradient(135deg, ${base1}, ${base2})` };
+  }, [theme]);
 
   return (
-    <div
-      className="min-h-screen w-full selection:bg-[var(--seasonal-primary-light)]
-                 selection:text-[var(--seasonal-primary-dark)]
-                 bg-neutral-50 text-neutral-900 dark:bg-neutral-950 dark:text-white"
-    >
-      {/* Skip link for accessibility */}
-      <a
-        href="#main"
-        className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4
-                   z-[100] rounded-md bg-white/90 px-3 py-2 text-sm shadow
-                   dark:bg-neutral-900/90 dark:text-white"
-      >
-        Skip to content
-      </a>
-
-      {/* Top bar */}
-      <TopBar />
-
-      {/* Shell */}
-      <div className="mx-auto flex w-full max-w-7xl">
-        {/* Sidebar (handles its own desktop/mobile UI) */}
-        <Sidebar role={userProfile.role} />
-
-        {/* Main content area */}
-        <main
-          id="main"
-          className="flex-1 min-h-[calc(100vh-56px)] p-4 sm:p-6 md:p-8
-                     bg-white/60 backdrop-blur supports-[backdrop-filter]:bg-white/50
-                     dark:bg-neutral-900/40"
-        >
-          {children}
+    <div className="min-h-screen" style={bgStyle}>
+      <Topbar title={title} onOpenSidebar={() => setSidebarOpen(true)} />
+      <div className="flex">
+        <Sidebar
+          items={items}
+          open={sidebarOpen}
+          onClose={() => setSidebarOpen(false)}
+        />
+        <main className="flex-1 p-4 md:p-8">
+          <div className="rounded-2xl bg-white/[0.03] border border-white/10 p-4 md:p-6">
+            {children}
+          </div>
         </main>
       </div>
     </div>

@@ -1,24 +1,46 @@
 rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
-    function isAuthenticated() { return request.auth != null; }
+    function isAuthed() { return request.auth != null; }
+    function isOwner(uid) { return isAuthed() && request.auth.uid == uid; }
 
-    // Files live under ndis-plans/{uid}/{filename}
-    match /ndis-plans/{uid}/{fileName} {
-      // Read/write only by the owner
-      allow read, write: if isAuthenticated() && request.auth.uid == uid;
+    // If you use custom-claims for admin, you can switch to:
+    // function isAdmin() { return isAuthed() && request.auth.token.role == 'admin'; }
+    // and replace isAdminUID() checks below with isAdmin().
 
-      // If you also want to enforce size/MIME, replace the single line above with:
-      // allow read: if isAuthenticated() && request.auth.uid == uid;
-      // allow write: if isAuthenticated()
-      //   && request.auth.uid == uid
-      //   && request.resource.size < 10 * 1024 * 1024
-      //   && request.resource.contentType.matches('application/pdf|application/msword|application/vnd.openxmlformats-officedocument.wordprocessingml.document|image/.*');
+    // Admin allowlist (simple + fast)
+    function isAdminUID() {
+      return isAuthed() && (
+        request.auth.uid in [
+          "REPLACE_WITH_ADMIN_UID_1",
+          "REPLACE_WITH_ADMIN_UID_2"
+        ]
+      );
     }
 
-    // Default deny
+    /* ---------- Public/intro videos ---------- */
+    match /videos/{allPaths=**} {
+      allow read: if true;          // or: if isAuthed();
+      allow write: if isAdminUID(); // admins upload videos
+    }
+
+    /* ---------- Care plan PDFs ---------- */
+    // Users can upload/read ONLY in their own folder. Admins can manage all.
+    match /ndis-plans/{uid}/{fileName=**} {
+      // read own or admin
+      allow read: if isOwner(uid) || isAdminUID();
+
+      // write own or admin + constraints (PDF <= 20MB)
+      allow write: if (isOwner(uid) || isAdminUID())
+                   && request.resource.size < 20 * 1024 * 1024
+                   && request.resource.contentType.matches('application/pdf(;.*)?');
+    }
+
+    /* ---------- Everything else ---------- */
+    // Default: authenticated users can read; no client writes.
     match /{allPaths=**} {
-      allow read, write: if false;
+      allow read: if isAuthed();
+      allow write: if false;
     }
   }
 }
