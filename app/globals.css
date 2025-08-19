@@ -2,8 +2,13 @@
 
 @import "tailwindcss";
 
-/* Configure dark mode - Tailwind 4.1 uses CSS for configuration */
-@variant dark (&:is(.dark *));
+@custom-variant dark (&:where(html.__no-dark__));
+
+/* Optional: tell the UA to assume light colors */
+:root {
+  color-scheme: light;
+}
+
 
 /* Custom properties for seasonal themes */
 :root {

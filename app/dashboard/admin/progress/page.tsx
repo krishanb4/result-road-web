@@ -1,7 +1,7 @@
 // app/dashboard/admin/progress/page.tsx
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import {
   collection,
   onSnapshot,
@@ -39,6 +39,17 @@ type UserLite = {
   id: string;
   displayName?: string | null;
   email?: string | null;
+};
+
+/* ---------------- Light UI tokens ---------------- */
+const tokens: CSSProperties = {
+  ["--panel-bg" as any]: "rgba(255,255,255,0.95)",
+  ["--panel-border" as any]: "rgba(15,23,42,0.08)",
+  ["--panel-text" as any]: "#0f172a",
+  ["--muted-text" as any]: "#475569",
+  ["--chip-bg" as any]: "rgba(2,6,23,0.04)",
+  ["--table-div" as any]: "rgba(15,23,42,0.06)",
+  ["--ring" as any]: "rgba(99,102,241,0.35)",
 };
 
 /* ---------------- Helpers ---------------- */
@@ -79,9 +90,9 @@ export default function AdminProgress() {
   const [programFilter, setProgramFilter] = useState<string>("all");
   const [fpFilter, setFpFilter] = useState<string>("all");
 
-  /* 1) Live assignments (drive the table from here) */
+  /* 1) Live assignments */
   useEffect(() => {
-    // If you only want active ones, uncomment where("status","==","assigned")
+    // If you only want active ones, uncomment:
     // const qA = query(collection(db, "assignments"), where("status","==","assigned"));
     const qA = query(collection(db, "assignments"));
     const unsub = onSnapshot(qA, (snap) => {
@@ -94,7 +105,7 @@ export default function AdminProgress() {
     return () => unsub();
   }, []);
 
-  /* 2) Live progress (to fill module percents if present) */
+  /* 2) Live progress */
   useEffect(() => {
     const unsub = onSnapshot(collection(db, "progress"), (snap) => {
       setProgress(snap.docs.map((d) => ({ id: d.id, ...(d.data() as any) })));
@@ -178,7 +189,7 @@ export default function AdminProgress() {
     })();
   }, [assignments]);
 
-  /* 4) Build UI rows from assignments (progress fills in, default 0%) */
+  /* 4) Build UI rows */
   type UiRow = {
     assignmentId: string;
     programId?: string | null;
@@ -227,21 +238,20 @@ export default function AdminProgress() {
         a.participantId || undefined
       );
 
-      // decide module order
+      // module order
       let orderedModules: string[] = [];
       if (program?.modules?.length) {
         orderedModules = program.modules.map(
           (m, i) => moduleKey(m) || `m-${i}`
         );
       } else {
-        // no declared modules -> derive from any progress docs for this assignment
         const docs = progressByAssign.get(a.id) || [];
         orderedModules = Array.from(
           new Set(docs.map((p) => p.moduleId).filter(Boolean))
         );
       }
 
-      // build cells with progress (default 0 if missing)
+      // progress cells
       const docsByModule = new Map<string, ProgressDoc[]>();
       (progressByAssign.get(a.id) || []).forEach((p) => {
         const arr = docsByModule.get(p.moduleId) || [];
@@ -358,46 +368,50 @@ export default function AdminProgress() {
     return { total, completed, inProgress, participants, fps };
   }, [filteredRows]);
 
-  /* 6) UI bits */
+  /* 6) UI */
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 text-[var(--panel-text)]" style={tokens}>
       {/* Filters + Stats */}
       <div className="flex flex-col md:flex-row md:items-end gap-3">
-        <div className="flex items-center gap-2">
-          <label className="text-sm text-white/70">Program</label>
-          <select
-            className="rounded-lg bg-slate-900 border border-white/10 p-2"
-            value={programFilter}
-            onChange={(e) => setProgramFilter(e.target.value)}
-          >
-            <option value="all">All</option>
-            {programOptions.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.title}
-              </option>
-            ))}
-          </select>
-        </div>
+        <div className="flex flex-col sm:flex-row gap-2">
+          <div className="flex items-center gap-2">
+            <label className="text-sm text-[var(--muted-text)]">Program</label>
+            <select
+              className="rounded-lg bg-white border border-slate-300 p-2 text-slate-800 outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
+              value={programFilter}
+              onChange={(e) => setProgramFilter(e.target.value)}
+            >
+              <option value="all">All</option>
+              {programOptions.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.title}
+                </option>
+              ))}
+            </select>
+          </div>
 
-        <div className="flex items-center gap-2">
-          <label className="text-sm text-white/70">Fitness Partner</label>
-          <select
-            className="rounded-lg bg-slate-900 border border-white/10 p-2"
-            value={fpFilter}
-            onChange={(e) => setFpFilter(e.target.value)}
-          >
-            <option value="all">All</option>
-            {fpOptions.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.label}
-              </option>
-            ))}
-          </select>
+          <div className="flex items-center gap-2">
+            <label className="text-sm text-[var(--muted-text)]">
+              Fitness Partner
+            </label>
+            <select
+              className="rounded-lg bg-white border border-slate-300 p-2 text-slate-800 outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
+              value={fpFilter}
+              onChange={(e) => setFpFilter(e.target.value)}
+            >
+              <option value="all">All</option>
+              {fpOptions.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.label}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
 
         <div className="flex-1" />
 
-        <div className="grid grid-cols-5 gap-2">
+        <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
           <StatChip label="Assignments" value={stats.total} />
           <StatChip label="Completed" value={stats.completed} />
           <StatChip label="In Progress" value={stats.inProgress} />
@@ -406,52 +420,111 @@ export default function AdminProgress() {
         </div>
       </div>
 
-      {/* Table */}
-      <div className="overflow-x-auto">
-        <table className="w-full text-sm">
-          <thead className="text-left text-white/70">
-            <tr>
-              <th className="py-2 pr-4">Program</th>
-              <th className="py-2 pr-4">Participant</th>
-              <th className="py-2 pr-4">Fitness Partner</th>
-              <th className="py-2 pr-4">Modules</th>
-              <th className="py-2 pr-4">Overall</th>
-              <th className="py-2 pr-4">Updated</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-white/10">
-            {filteredRows.map((r) => (
-              <tr key={r.assignmentId}>
-                <td className="py-2 pr-4 align-top">{r.programTitle}</td>
-                <td className="py-2 pr-4 align-top">{r.participantName}</td>
-                <td className="py-2 pr-4 align-top">{r.fitnessPartnerName}</td>
-                <td className="py-2 pr-4 align-top">
-                  <ModuleGantt cells={r.modules} />
-                </td>
-                <td className="py-2 pr-4 align-top">
-                  <OverallBar value={r.overall} />
-                </td>
-                <td className="py-2 pr-4 align-top text-white/60">
-                  {r.lastUpdated ? r.lastUpdated.toLocaleString() : "—"}
-                </td>
-              </tr>
-            ))}
-            {filteredRows.length === 0 && (
+      {/* Desktop/table */}
+      <section className="hidden md:block rounded-2xl bg-[var(--panel-bg)] border border-[var(--panel-border)] p-3 md:p-5 backdrop-blur">
+        <div className="overflow-x-auto">
+          <table className="min-w-[1100px] w-full text-sm">
+            <thead className="text-left text-slate-600 border-b border-[var(--panel-border)]">
               <tr>
-                <td colSpan={6} className="py-8 text-center text-white/60">
-                  No assignments yet. Assign participants to the program to
-                  track progress.
-                </td>
+                <th className="py-2 px-3">Program</th>
+                <th className="py-2 px-3">Participant</th>
+                <th className="py-2 px-3">Fitness Partner</th>
+                <th className="py-2 px-3">Modules</th>
+                <th className="py-2 px-3">Overall</th>
+                <th className="py-2 px-3">Updated</th>
               </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
+            </thead>
+            <tbody
+              className="divide-y"
+              style={{
+                ["--tw-divide-opacity" as any]: 1,
+                ["--tw-divide-color" as any]: "var(--table-div)",
+              }}
+            >
+              {filteredRows.map((r) => (
+                <tr key={r.assignmentId} className="align-top">
+                  <td className="py-2 px-3">{r.programTitle}</td>
+                  <td className="py-2 px-3">{r.participantName}</td>
+                  <td className="py-2 px-3">{r.fitnessPartnerName}</td>
+                  <td className="py-2 px-3">
+                    <ModuleGantt cells={r.modules} />
+                  </td>
+                  <td className="py-2 px-3">
+                    <OverallBar value={r.overall} />
+                  </td>
+                  <td className="py-2 px-3 text-[var(--muted-text)]">
+                    {r.lastUpdated
+                      ? new Intl.DateTimeFormat(undefined, {
+                          dateStyle: "medium",
+                          timeStyle: "short",
+                        }).format(r.lastUpdated)
+                      : "—"}
+                  </td>
+                </tr>
+              ))}
+              {filteredRows.length === 0 && (
+                <tr>
+                  <td
+                    colSpan={6}
+                    className="py-8 text-center text-[var(--muted-text)]"
+                  >
+                    No assignments yet. Assign participants to a program to
+                    start tracking.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </section>
 
-      <p className="text-xs text-white/50">
-        Tip: New programs appear here once they have at least one{" "}
-        <b>assignment</b>. Modules come from <code>programs.modules</code>;
-        without progress they show as 0%.
+      {/* Mobile/cards */}
+      <section className="md:hidden grid gap-3">
+        {filteredRows.length === 0 && (
+          <div className="rounded-2xl bg-[var(--panel-bg)] border border-[var(--panel-border)] p-4 text-[var(--muted-text)]">
+            No assignments yet.
+          </div>
+        )}
+
+        {filteredRows.map((r) => (
+          <div
+            key={r.assignmentId}
+            className="rounded-2xl bg-[var(--panel-bg)] border border-[var(--panel-border)] p-4"
+          >
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <div className="text-slate-900 font-medium">
+                  {r.programTitle}
+                </div>
+                <div className="text-sm text-[var(--muted-text)]">
+                  {r.participantName} · {r.fitnessPartnerName}
+                </div>
+              </div>
+              <div className="shrink-0">
+                <OverallBar value={r.overall} className="w-28" />
+              </div>
+            </div>
+
+            <div className="mt-3">
+              <ModuleGantt cells={r.modules} compact />
+            </div>
+
+            <div className="mt-3 text-xs text-[var(--muted-text)]">
+              {r.lastUpdated
+                ? new Intl.DateTimeFormat(undefined, {
+                    dateStyle: "medium",
+                    timeStyle: "short",
+                  }).format(r.lastUpdated)
+                : "—"}
+            </div>
+          </div>
+        ))}
+      </section>
+
+      <p className="text-xs text-[var(--muted-text)]">
+        Tip: Programs appear once they have at least one <b>assignment</b>.
+        Modules come from <code>programs.modules</code>; without progress they
+        show as 0%.
       </p>
     </div>
   );
@@ -460,15 +533,18 @@ export default function AdminProgress() {
 /* ---------------- UI bits ---------------- */
 function StatChip({ label, value }: { label: string; value: number | string }) {
   return (
-    <div className="rounded-lg bg-slate-900/60 border border-white/10 px-3 py-2">
-      <div className="text-[11px] text-white/60">{label}</div>
-      <div className="text-lg font-semibold">{value}</div>
+    <div className="rounded-lg bg-[var(--chip-bg)] border border-[var(--panel-border)] px-3 py-2">
+      <div className="text-[11px] text-[var(--muted-text)]">{label}</div>
+      <div className="text-lg font-semibold text-[var(--panel-text)]">
+        {value}
+      </div>
     </div>
   );
 }
 
 function ModuleGantt({
   cells,
+  compact = false,
 }: {
   cells: {
     id: string;
@@ -476,34 +552,38 @@ function ModuleGantt({
     percent: number;
     updatedAt: Date | null;
   }[];
+  compact?: boolean;
 }) {
-  if (!cells.length) return <span className="text-white/60">No modules</span>;
+  if (!cells.length)
+    return <span className="text-[var(--muted-text)]">No modules</span>;
+
+  const boxW = compact ? "w-8" : "w-10";
 
   return (
     <div className="flex items-center gap-1 flex-wrap max-w-[560px]">
       {cells.map((c, i) => {
         const color =
           c.percent >= 100
-            ? "bg-emerald-500/70 border-emerald-300/60"
+            ? "bg-emerald-500 border-emerald-300"
             : c.percent >= 75
-            ? "bg-cyan-500/50 border-cyan-300/50"
+            ? "bg-cyan-500/80 border-cyan-300"
             : c.percent >= 25
-            ? "bg-amber-500/40 border-amber-300/40"
+            ? "bg-amber-500/80 border-amber-300"
             : c.percent > 0
-            ? "bg-rose-500/40 border-rose-300/40"
-            : "bg-white/5 border-white/10";
+            ? "bg-rose-500/80 border-rose-300"
+            : "bg-slate-200 border-slate-300";
 
         return (
           <div
             key={c.id || i}
-            className={`h-6 w-8 md:w-10 rounded-[6px] border relative group`}
+            className={`h-6 ${boxW} rounded-md border relative group overflow-hidden`}
             title={`${c.title} — ${c.percent}%`}
           >
             <div className={`absolute inset-0 ${color}`} />
-            <div className="absolute inset-0 flex items-center justify-center text-[10px] text-white/80">
+            <div className="absolute inset-0 flex items-center justify-center text-[10px] text-white/90">
               {Math.round(c.percent)}%
             </div>
-            <div className="absolute left-1/2 -translate-x-1/2 top-[110%] hidden group-hover:block whitespace-nowrap text-[10px] text-white/80 bg-black/70 px-2 py-1 rounded">
+            <div className="absolute left-1/2 -translate-x-1/2 top-[110%] hidden group-hover:block whitespace-nowrap text-[10px] text-white bg-black/70 px-2 py-1 rounded shadow">
               {c.title}
             </div>
           </div>
@@ -513,22 +593,32 @@ function ModuleGantt({
   );
 }
 
-function OverallBar({ value }: { value: number }) {
+function OverallBar({
+  value,
+  className = "w-40",
+}: {
+  value: number;
+  className?: string;
+}) {
+  const pct = Math.max(0, Math.min(100, value));
+  const barColor =
+    value >= 100
+      ? "bg-emerald-500"
+      : value >= 75
+      ? "bg-cyan-500"
+      : value >= 25
+      ? "bg-amber-500"
+      : value > 0
+      ? "bg-rose-500"
+      : "bg-slate-200";
+
   return (
-    <div className="w-40 h-3 rounded-full bg-white/10 overflow-hidden border border-white/10">
+    <div
+      className={`${className} h-3 rounded-full bg-slate-100 overflow-hidden border border-[var(--panel-border)]`}
+    >
       <div
-        className={`h-full ${
-          value >= 100
-            ? "bg-emerald-500"
-            : value >= 75
-            ? "bg-cyan-500"
-            : value >= 25
-            ? "bg-amber-500"
-            : value > 0
-            ? "bg-rose-500"
-            : "bg-white/10"
-        }`}
-        style={{ width: `${Math.max(0, Math.min(100, value))}%` }}
+        className={`h-full ${barColor}`}
+        style={{ width: `${pct}%` }}
         title={`${value}%`}
       />
     </div>

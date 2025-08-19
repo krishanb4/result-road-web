@@ -58,7 +58,7 @@ function bucketByDay(docs: Array<{ createdAt?: any }>, days: string[]) {
 function Sparkline({
   series,
   height = 64,
-  stroke = "stroke-emerald-400",
+  stroke = "stroke-emerald-500",
 }: {
   series: number[];
   height?: number;
@@ -85,6 +85,8 @@ function Sparkline({
       <polyline
         className={`${stroke} fill-none`}
         strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
         points={points}
         vectorEffect="non-scaling-stroke"
       />
@@ -108,21 +110,21 @@ function TwoBar({
     <div className="flex items-end gap-3 h-40">
       <div className="flex-1 flex flex-col items-center">
         <div
-          className="w-full max-w-16 rounded-t-md bg-emerald-500/30 border border-emerald-400/40"
+          className="w-full max-w-16 rounded-t-md bg-emerald-500/20 border border-emerald-400/30"
           style={{ height: `${(a / max) * 100}%` }}
           title={`${aLabel}: ${a}`}
         />
-        <div className="text-xs mt-2 text-white/80">{aLabel}</div>
-        <div className="text-xs text-white/60">{a}</div>
+        <div className="text-xs mt-2 text-slate-600">{aLabel}</div>
+        <div className="text-xs text-slate-500">{a}</div>
       </div>
       <div className="flex-1 flex flex-col items-center">
         <div
-          className="w-full max-w-16 rounded-t-md bg-rose-500/30 border border-rose-400/40"
+          className="w-full max-w-16 rounded-t-md bg-rose-500/20 border border-rose-400/30"
           style={{ height: `${(b / max) * 100}%` }}
           title={`${bLabel}: ${b}`}
         />
-        <div className="text-xs mt-2 text-white/80">{bLabel}</div>
-        <div className="text-xs text-white/60">{b}</div>
+        <div className="text-xs mt-2 text-slate-600">{bLabel}</div>
+        <div className="text-xs text-slate-500">{b}</div>
       </div>
     </div>
   );
@@ -251,6 +253,32 @@ export default function AdminHome() {
     })();
   }, [days]);
 
+  // 🎨 Light surface tokens (themeable via ThemeContext)
+  const tokens = useMemo(
+    () =>
+      ({
+        ["--panel-bg" as any]: "rgba(255,255,255,0.9)",
+        ["--panel-border" as any]: "rgba(15,23,42,0.08)", // slate-900 @ 8%
+        ["--panel-text" as any]: "#0f172a", // slate-900
+        ["--muted-text" as any]: "#475569", // slate-600
+        ["--chip-bg" as any]: "rgba(2,6,23,0.04)",
+        ["--table-div" as any]: "rgba(15,23,42,0.06)",
+      } as React.CSSProperties),
+    []
+  );
+
+  const Panel: React.FC<{ children: React.ReactNode; className?: string }> = ({
+    children,
+    className = "",
+  }) => (
+    <div
+      style={tokens}
+      className={`rounded-2xl bg-[var(--panel-bg)] border border-[var(--panel-border)] shadow-sm backdrop-blur p-4 ${className}`}
+    >
+      {children}
+    </div>
+  );
+
   const StatCard = ({
     title,
     value,
@@ -260,17 +288,24 @@ export default function AdminHome() {
     value: number | string;
     icon: JSX.Element;
   }) => (
-    <div className="rounded-xl bg-slate-900/60 border border-white/10 p-4 flex items-center gap-3">
-      <div className="rounded-lg bg-white/10 p-2">{icon}</div>
+    <div
+      style={tokens}
+      className="rounded-xl bg-[var(--panel-bg)] border border-[var(--panel-border)] p-4 flex items-center gap-3"
+    >
+      <div className="rounded-lg bg-[var(--chip-bg)] border border-[var(--panel-border)] p-2 text-slate-700">
+        {icon}
+      </div>
       <div>
-        <div className="text-sm text-white/70">{title}</div>
-        <div className="text-2xl font-semibold">{value}</div>
+        <div className="text-sm text-[var(--muted-text)]">{title}</div>
+        <div className="text-2xl font-semibold text-[var(--panel-text)]">
+          {value}
+        </div>
       </div>
     </div>
   );
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 text-[var(--panel-text)]" style={tokens}>
       {/* top stats */}
       <div className="grid md:grid-cols-5 gap-4">
         <StatCard
@@ -303,65 +338,77 @@ export default function AdminHome() {
       {/* charts row */}
       <div className="grid lg:grid-cols-3 gap-4">
         {/* registrations sparkline */}
-        <div className="rounded-2xl bg-slate-900/60 border border-white/10 p-4">
+        <Panel>
           <div className="flex items-center justify-between mb-2">
-            <div className="text-sm text-white/70">
+            <div className="text-sm text-[var(--muted-text)]">
               Registrations · Last 14 days
             </div>
-            <Activity size={16} className="text-white/60" />
+            <Activity size={16} className="text-slate-500" />
           </div>
           <Sparkline series={regSeries} />
-          <div className="flex justify-between text-[10px] text-white/50 mt-1">
+          <div className="flex justify-between text-[10px] text-slate-500 mt-1">
             <span>{days[0].slice(5)}</span>
             <span>{days[days.length - 1].slice(5)}</span>
           </div>
-        </div>
+        </Panel>
 
         {/* forms sparkline */}
-        <div className="rounded-2xl bg-slate-900/60 border border-white/10 p-4">
+        <Panel>
           <div className="flex items-center justify-between mb-2">
-            <div className="text-sm text-white/70">Forms · Last 14 days</div>
-            <Activity size={16} className="text-white/60" />
+            <div className="text-sm text-[var(--muted-text)]">
+              Forms · Last 14 days
+            </div>
+            <Activity size={16} className="text-slate-500" />
           </div>
-          <Sparkline series={formSeries} stroke="stroke-cyan-400" />
-          <div className="flex justify-between text-[10px] text-white/50 mt-1">
+          <Sparkline series={formSeries} stroke="stroke-cyan-500" />
+          <div className="flex justify-between text-[10px] text-slate-500 mt-1">
             <span>{days[0].slice(5)}</span>
             <span>{days[days.length - 1].slice(5)}</span>
           </div>
-        </div>
+        </Panel>
 
         {/* programs status bars */}
-        <div className="rounded-2xl bg-slate-900/60 border border-white/10 p-4">
-          <div className="text-sm text-white/70 mb-2">Programs Status</div>
+        <Panel>
+          <div className="text-sm text-[var(--muted-text)] mb-2">
+            Programs Status
+          </div>
           <TwoBar
             a={stats.programsActive}
             b={stats.programsInactive}
             aLabel="Active"
             bLabel="Inactive"
           />
-        </div>
+        </Panel>
       </div>
 
       {/* latest registrations */}
-      <div className="rounded-2xl bg-slate-900/60 border border-white/10 p-4">
+      <Panel>
         <div className="flex items-center justify-between mb-3">
-          <div className="text-sm text-white/70">Latest Registrations</div>
+          <div className="text-sm text-[var(--muted-text)]">
+            Latest Registrations
+          </div>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
-            <thead className="text-left text-white/70 border-b border-white/10">
+            <thead className="text-left text-slate-600 border-b border-[var(--panel-border)]">
               <tr>
                 <th className="py-2 pr-4">Name</th>
                 <th className="py-2 pr-4">Email</th>
                 <th className="py-2 pr-4">When</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-white/10">
+            <tbody
+              className="divide-y"
+              style={{
+                ["--tw-divide-opacity" as any]: 1,
+                ["--tw-divide-color" as any]: "var(--table-div)",
+              }}
+            >
               {latestRegs.map((r) => (
-                <tr key={r.id}>
+                <tr key={r.id} className="text-slate-800">
                   <td className="py-2 pr-4">{(r as any).name || "—"}</td>
                   <td className="py-2 pr-4">{(r as any).email || "—"}</td>
-                  <td className="py-2 pr-4 text-white/60">
+                  <td className="py-2 pr-4 text-slate-500">
                     {r.createdAt?.toDate?.()
                       ? new Date(r.createdAt.toDate()).toLocaleString()
                       : "—"}
@@ -370,7 +417,7 @@ export default function AdminHome() {
               ))}
               {latestRegs.length === 0 && (
                 <tr>
-                  <td colSpan={3} className="py-6 text-center text-white/60">
+                  <td colSpan={3} className="py-6 text-center text-slate-500">
                     No recent registrations.
                   </td>
                 </tr>
@@ -378,10 +425,10 @@ export default function AdminHome() {
             </tbody>
           </table>
         </div>
-      </div>
+      </Panel>
 
       {/* tip */}
-      <p className="text-xs text-white/50">
+      <p className="text-xs text-slate-500">
         Tip: these charts rely on a <code>createdAt</code> timestamp on{" "}
         <code>registrations</code> and <code>forms</code>. Make sure your writes
         use <code>serverTimestamp()</code>.
