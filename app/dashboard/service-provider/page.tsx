@@ -13,7 +13,7 @@ export default function ServiceProviderDashboard() {
       <VideoGate
         uid={uid}
         role="service_provider"
-        videoUrl="/videos/service-provider-intro.mp4"
+        videoUrl="/videos/service-provider.mov"
       >
         <FormBuilder uid={uid} type="service_provider_feedback" />
       </VideoGate>

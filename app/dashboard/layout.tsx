@@ -1,4 +1,4 @@
-// app/dashboard/layout.tsx (or wherever this lives)
+// app/dashboard/layout.tsx
 "use client";
 
 import { ReactNode, useMemo, useState } from "react";
@@ -104,10 +104,11 @@ function computeTitle(segments: string[]): string {
   const [first, second] = segments;
 
   if (first === "admin") {
+    // ✅ fixed "participants" -> "users"
     const map: Record<string, string> = {
       undefined: "Overview",
       "": "Overview",
-      participants: "Participants",
+      users: "Users",
       programs: "Programs",
       registrations: "Registrations",
       forms: "Forms",
@@ -149,15 +150,29 @@ export default function DashboardRootLayout({
     : ROLE_ITEMS[segments[0] ?? ""] ?? [];
   const title = computeTitle(segments as string[]);
 
-  // 👉 Light background (supports ThemeContext overrides: lightBg1/lightBg2)
+  // 🌤️ Light background (supports ThemeContext overrides: lightBg1/lightBg2)
   const bgStyle = useMemo(() => {
     const base1 = theme?.lightBg1 ?? "#F8FAFC"; // slate-50-ish
     const base2 = theme?.lightBg2 ?? "#EEF2FF"; // indigo-50-ish
     return { background: `linear-gradient(135deg, ${base1}, ${base2})` };
   }, [theme]);
 
+  // 🎨 Light card tokens with fallbacks; lets you theme via context
+  const cardStyle = useMemo(
+    () =>
+      ({
+        // custom props readable in Tailwind via arbitrary values
+        ["--card-bg" as any]: theme?.lightCardBg ?? "rgba(255,255,255,0.85)",
+        ["--card-border" as any]:
+          theme?.lightCardBorder ?? "rgba(15,23,42,0.08)", // slate-900 @ 8%
+        ["--card-text" as any]: theme?.lightText ?? "#0f172a", // slate-900
+        ["--muted-text" as any]: theme?.lightMutedText ?? "#475569", // slate-600
+      } as React.CSSProperties),
+    [theme]
+  );
+
   return (
-    <div className="min-h-screen" style={bgStyle}>
+    <div className="min-h-screen text-slate-900" style={bgStyle}>
       <Topbar title={title} onOpenSidebar={() => setSidebarOpen(true)} />
       <div className="flex">
         <Sidebar
@@ -166,8 +181,23 @@ export default function DashboardRootLayout({
           onClose={() => setSidebarOpen(false)}
         />
         <main className="flex-1 p-4 md:p-8">
-          {/* Keep a darker card so existing components with text-white remain readable */}
-          <div className="rounded-2xl bg-slate-900/90 border border-white/10 p-4 md:p-6">
+          {/* ☀️ Light card container.
+              The [&_.text-white] override ensures any legacy components using text-white
+              become readable on a light surface without refactoring them yet. */}
+          <div
+            style={cardStyle}
+            className="
+              rounded-2xl
+              bg-[var(--card-bg)]
+              border border-[var(--card-border)]
+              shadow-lg backdrop-blur
+              p-4 md:p-6
+              text-[var(--card-text)]
+              [&_.text-white]:text-[var(--card-text)]
+              [&_.text-gray-300]:text-[var(--muted-text)]
+              [&_.bg-slate-900]:bg-transparent
+            "
+          >
             {children}
           </div>
         </main>

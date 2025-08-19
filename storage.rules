@@ -2,42 +2,43 @@ rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
     function isAuthed() { return request.auth != null; }
-    function isOwner(uid) { return isAuthed() && request.auth.uid == uid; }
-
-    // If you use custom-claims for admin, you can switch to:
-    // function isAdmin() { return isAuthed() && request.auth.token.role == 'admin'; }
-    // and replace isAdminUID() checks below with isAdmin().
-
-    // Admin allowlist (simple + fast)
+    function me() { return request.auth.uid; }
+    function isOwner(uid) { return isAuthed() && me() == uid; }
     function isAdminUID() {
       return isAuthed() && (
-        request.auth.uid in [
+        me() in [
           "REPLACE_WITH_ADMIN_UID_1",
           "REPLACE_WITH_ADMIN_UID_2"
         ]
       );
     }
 
-    /* ---------- Public/intro videos ---------- */
     match /videos/{allPaths=**} {
-      allow read: if true;          // or: if isAuthed();
-      allow write: if isAdminUID(); // admins upload videos
+      allow read: if true;
+      allow write: if isAdminUID();
     }
 
-    /* ---------- Care plan PDFs ---------- */
-    // Users can upload/read ONLY in their own folder. Admins can manage all.
     match /ndis-plans/{uid}/{fileName=**} {
-      // read own or admin
       allow read: if isOwner(uid) || isAdminUID();
-
-      // write own or admin + constraints (PDF <= 20MB)
       allow write: if (isOwner(uid) || isAdminUID())
                    && request.resource.size < 20 * 1024 * 1024
                    && request.resource.contentType.matches('application/pdf(;.*)?');
     }
 
-    /* ---------- Everything else ---------- */
-    // Default: authenticated users can read; no client writes.
+    match /service-provider-feedback/{uid}/{fileName=**} {
+      allow read: if isOwner(uid) || isAdminUID();
+      allow write: if (isOwner(uid) || isAdminUID())
+                   && request.resource.size < 25 * 1024 * 1024
+                   && request.resource.contentType.matches('(image/.*|application/pdf|application/msword|application/vnd\\..*|text/plain)(;.*)?');
+    }
+
+    match /coordinator-overviews/{uid}/{fileName=**} {
+      allow read: if isOwner(uid) || isAdminUID();
+      allow write: if (isOwner(uid) || isAdminUID())
+                   && request.resource.size < 25 * 1024 * 1024
+                   && request.resource.contentType.matches('(image/.*|application/pdf|application/msword|application/vnd\\..*|text/plain)(;.*)?');
+    }
+
     match /{allPaths=**} {
       allow read: if isAuthed();
       allow write: if false;

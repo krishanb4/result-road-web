@@ -1,7 +1,7 @@
 // components/forms/FitnessPartnerFeedbackForm.tsx
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import {
   collection,
   query,
@@ -26,12 +26,12 @@ type SimpleUser = {
   email?: string | null;
 };
 
+/* ---------------- helpers ---------------- */
 function chunk<T>(arr: T[], size = 10): T[][] {
   const out: T[][] = [];
   for (let i = 0; i < arr.length; i += size) out.push(arr.slice(i, i + size));
   return out;
 }
-
 function todayStr() {
   const d = new Date();
   const yyyy = d.getFullYear();
@@ -39,6 +39,16 @@ function todayStr() {
   const dd = String(d.getDate()).padStart(2, "0");
   return `${yyyy}-${mm}-${dd}`;
 }
+
+/* ---------------- light theme tokens ---------------- */
+const tokens: CSSProperties = {
+  ["--panel-bg" as any]: "rgba(255,255,255,0.95)",
+  ["--panel-border" as any]: "rgba(15,23,42,0.08)",
+  ["--panel-text" as any]: "#0f172a",
+  ["--muted-text" as any]: "#475569",
+  ["--ring" as any]: "rgba(99,102,241,0.35)",
+  ["--hint" as any]: "#0ea5e9",
+};
 
 export default function FitnessPartnerFeedbackForm({ uid }: { uid: string }) {
   // programs for this fitness partner
@@ -82,10 +92,7 @@ export default function FitnessPartnerFeedbackForm({ uid }: { uid: string }) {
 
   // 2) When a program is selected, live-load its assignments → participant IDs
   useEffect(() => {
-    if (!programId) {
-      setProgramParticipants((prev) => ({ ...prev, [programId]: [] }));
-      return;
-    }
+    if (!programId) return;
 
     const qA = query(
       collection(db, "assignments"),
@@ -156,6 +163,7 @@ export default function FitnessPartnerFeedbackForm({ uid }: { uid: string }) {
   }, [participantId, usersById]);
 
   const minutesNum = minutes ? Number(minutes) : null;
+  const minutesInvalid = minutes !== "" && Number.isNaN(minutesNum);
 
   const allRequired =
     !!programId &&
@@ -164,7 +172,7 @@ export default function FitnessPartnerFeedbackForm({ uid }: { uid: string }) {
     !!attendance &&
     !!rating &&
     !!notes.trim() &&
-    (minutes === "" || !Number.isNaN(minutesNum));
+    !minutesInvalid;
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -181,7 +189,7 @@ export default function FitnessPartnerFeedbackForm({ uid }: { uid: string }) {
         sessionDate: new Date(sessionDate + "T00:00:00"),
         attendance, // "present" | "absent"
         rating: Number(rating), // 1..5
-        minutes: minutesNum, // number|null
+        minutes: minutes === "" ? null : Number(minutes), // number|null
         notes: notes.trim(),
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
@@ -204,153 +212,223 @@ export default function FitnessPartnerFeedbackForm({ uid }: { uid: string }) {
     }
   }
 
+  const field =
+    "w-full rounded-lg bg-white border border-slate-300 p-2 text-slate-800 outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]";
+  const label = "text-sm text-[var(--muted-text)]";
+  const panel =
+    "rounded-2xl bg-[var(--panel-bg)] border border-[var(--panel-border)] p-4 md:p-6 backdrop-blur";
+
   return (
-    <form className="space-y-4" onSubmit={onSubmit}>
-      {/* Program */}
-      <div className="space-y-1">
-        <label className="text-sm text-white/80">
-          Program <span className="text-rose-300">*</span>
-        </label>
-        <select
-          required
-          className="w-full rounded-lg bg-slate-900 border border-white/10 p-2"
-          value={programId}
-          onChange={(e) => {
-            setProgramId(e.target.value);
-            setParticipantId(""); // reset on program change
-          }}
-        >
-          <option value="">— Select program —</option>
-          {programs.map((p) => (
-            <option key={p.id} value={p.id}>
-              {p.title}
-            </option>
-          ))}
-        </select>
-        {programs.length === 0 && (
-          <p className="text-xs text-white/60">
-            No programs assigned to you yet.
+    <form
+      className="space-y-6 text-[var(--panel-text)]"
+      style={tokens}
+      onSubmit={onSubmit}
+    >
+      {/* Header */}
+      <div className="flex items-start justify-between">
+        <div>
+          <h3 className="text-xl font-semibold text-slate-900">
+            Session Feedback
+          </h3>
+          <p className="text-sm text-[var(--muted-text)]">
+            Submit notes and attendance for a participant session.
           </p>
-        )}
+        </div>
       </div>
 
-      {/* Participant (filtered by program) */}
-      <div className="space-y-1">
-        <label className="text-sm text-white/80">
-          Participant <span className="text-rose-300">*</span>
-        </label>
-        <select
-          required
-          className="w-full rounded-lg bg-slate-900 border border-white/10 p-2"
-          value={participantId}
-          onChange={(e) => setParticipantId(e.target.value)}
-          disabled={!programId}
-        >
-          <option value="">
-            {!programId
-              ? "Select a program first"
-              : (programParticipants[programId]?.length ?? 0) > 0
-              ? "— Select participant —"
-              : "No participants found"}
-          </option>
-          {(programParticipants[programId] ?? []).map((pid) => {
-            const u = usersById[pid];
-            const label = u?.displayName || u?.email || pid;
-            return (
-              <option key={pid} value={pid}>
-                {label}
+      {/* Program & Participant */}
+      <section className={panel}>
+        <h4 className="text-slate-900 font-medium mb-3">
+          Program & Participant
+        </h4>
+        <div className="grid md:grid-cols-2 gap-4">
+          <div className="space-y-1">
+            <label className={label}>
+              Program <span className="text-rose-500">*</span>
+            </label>
+            <select
+              required
+              className={field}
+              value={programId}
+              onChange={(e) => {
+                setProgramId(e.target.value);
+                setParticipantId(""); // reset on program change
+              }}
+            >
+              <option value="">— Select program —</option>
+              {programs.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.title}
+                </option>
+              ))}
+            </select>
+            {programs.length === 0 && (
+              <p className="text-xs text-[var(--muted-text)]">
+                No programs assigned to you yet.
+              </p>
+            )}
+          </div>
+
+          <div className="space-y-1">
+            <label className={label}>
+              Participant <span className="text-rose-500">*</span>
+            </label>
+            <select
+              required
+              className={field}
+              value={participantId}
+              onChange={(e) => setParticipantId(e.target.value)}
+              disabled={!programId}
+            >
+              <option value="">
+                {!programId
+                  ? "Select a program first"
+                  : participantsForProgram.length > 0
+                  ? "— Select participant —"
+                  : "No participants found"}
               </option>
-            );
-          })}
-        </select>
-      </div>
+              {participantsForProgram.map((pid) => {
+                const u = usersById[pid];
+                const labelTxt = u?.displayName || u?.email || pid;
+                return (
+                  <option key={pid} value={pid}>
+                    {labelTxt}
+                  </option>
+                );
+              })}
+            </select>
+            {!!participantId && (
+              <p className="text-xs text-[var(--muted-text)]">
+                Selected:{" "}
+                <span className="text-[var(--hint)]">{participantName}</span>
+              </p>
+            )}
+          </div>
+        </div>
+      </section>
 
       {/* Session details */}
-      <div className="grid md:grid-cols-3 gap-3">
-        <div className="space-y-1">
-          <label className="text-sm text-white/80">
-            Session date <span className="text-rose-300">*</span>
-          </label>
-          <input
-            required
-            type="date"
-            className="w-full rounded-lg bg-slate-900 border border-white/10 p-2"
-            value={sessionDate}
-            onChange={(e) => setSessionDate(e.target.value)}
-          />
+      <section className={panel}>
+        <h4 className="text-slate-900 font-medium mb-3">Session Details</h4>
+        <div className="grid md:grid-cols-3 gap-4">
+          <div className="space-y-1">
+            <label className={label}>
+              Session date <span className="text-rose-500">*</span>
+            </label>
+            <input
+              required
+              type="date"
+              className={field}
+              value={sessionDate}
+              onChange={(e) => setSessionDate(e.target.value)}
+            />
+          </div>
+
+          <div className="space-y-1">
+            <label className={label}>
+              Attendance <span className="text-rose-500">*</span>
+            </label>
+            <select
+              required
+              className={field}
+              value={attendance}
+              onChange={(e) =>
+                setAttendance(e.target.value as "present" | "absent")
+              }
+            >
+              <option value="present">Present</option>
+              <option value="absent">Absent</option>
+            </select>
+          </div>
+
+          <div className="space-y-1">
+            <label className={label}>
+              Rating (1–5) <span className="text-rose-500">*</span>
+            </label>
+            <select
+              required
+              className={field}
+              value={rating}
+              onChange={(e) => setRating(e.target.value)}
+            >
+              <option value="1">1 – Poor</option>
+              <option value="2">2 – Fair</option>
+              <option value="3">3 – Good</option>
+              <option value="4">4 – Very good</option>
+              <option value="5">5 – Excellent</option>
+            </select>
+          </div>
         </div>
 
-        <div className="space-y-1">
-          <label className="text-sm text-white/80">
-            Attendance <span className="text-rose-300">*</span>
-          </label>
-          <select
-            required
-            className="w-full rounded-lg bg-slate-900 border border-white/10 p-2"
-            value={attendance}
-            onChange={(e) =>
-              setAttendance(e.target.value as "present" | "absent")
-            }
-          >
-            <option value="present">Present</option>
-            <option value="absent">Absent</option>
-          </select>
+        <div className="grid md:grid-cols-3 gap-4 mt-4">
+          <div className="space-y-1 md:col-span-1">
+            <label className={label}>Minutes (optional)</label>
+            <input
+              type="number"
+              min={0}
+              step={5}
+              placeholder="e.g., 45"
+              className={`${field} ${
+                minutesInvalid
+                  ? "border-rose-300 focus-visible:ring-rose-300"
+                  : ""
+              }`}
+              value={minutes}
+              onChange={(e) => setMinutes(e.target.value)}
+            />
+            {minutesInvalid && (
+              <div className="text-xs text-rose-600">
+                Please enter a valid number.
+              </div>
+            )}
+            {!minutesInvalid && minutes !== "" && (
+              <div className="text-xs text-[var(--muted-text)]">
+                ~{minutes} min session
+              </div>
+            )}
+          </div>
+
+          <div className="space-y-1 md:col-span-2">
+            <label className={label}>
+              Notes <span className="text-rose-500">*</span>
+            </label>
+            <textarea
+              required
+              rows={5}
+              className={`${field} resize-y`}
+              placeholder="Progress, challenges, next steps…"
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+            />
+          </div>
         </div>
+      </section>
 
-        <div className="space-y-1">
-          <label className="text-sm text-white/80">
-            Rating (1–5) <span className="text-rose-300">*</span>
-          </label>
-          <select
-            required
-            className="w-full rounded-lg bg-slate-900 border border-white/10 p-2"
-            value={rating}
-            onChange={(e) => setRating(e.target.value)}
-          >
-            <option value="1">1 – Poor</option>
-            <option value="2">2 – Fair</option>
-            <option value="3">3 – Good</option>
-            <option value="4">4 – Very good</option>
-            <option value="5">5 – Excellent</option>
-          </select>
-        </div>
+      {/* Actions */}
+      <div className="flex items-center gap-2">
+        <button
+          type="submit"
+          disabled={saving || !allRequired}
+          className="px-4 py-2 rounded-xl bg-indigo-600 text-white hover:bg-indigo-500 disabled:opacity-60"
+        >
+          {saving ? "Saving…" : "Submit feedback"}
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            setParticipantId("");
+            setProgramId("");
+            setSessionDate(todayStr());
+            setAttendance("present");
+            setRating("3");
+            setMinutes("");
+            setNotes("");
+          }}
+          className="px-4 py-2 rounded-xl bg-white border border-slate-300 hover:bg-slate-50"
+        >
+          Reset
+        </button>
       </div>
-
-      {/* Minutes (optional) */}
-      <div className="space-y-1">
-        <label className="text-sm text-white/80">Minutes (optional)</label>
-        <input
-          type="number"
-          min={0}
-          step={5}
-          placeholder="e.g., 45"
-          className="w-full rounded-lg bg-slate-900 border border-white/10 p-2"
-          value={minutes}
-          onChange={(e) => setMinutes(e.target.value)}
-        />
-      </div>
-
-      {/* Notes */}
-      <div className="space-y-1">
-        <label className="text-sm text-white/80">
-          Notes <span className="text-rose-300">*</span>
-        </label>
-        <textarea
-          required
-          rows={5}
-          className="w-full rounded-lg bg-slate-900 border border-white/10 p-2"
-          placeholder="Progress, challenges, next steps…"
-          value={notes}
-          onChange={(e) => setNotes(e.target.value)}
-        />
-      </div>
-
-      <button
-        disabled={saving || !allRequired}
-        className="px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 disabled:opacity-60"
-      >
-        {saving ? "Saving…" : "Submit feedback"}
-      </button>
     </form>
   );
 }
