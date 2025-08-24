@@ -13,7 +13,7 @@ export default function SupportWorkerDashboard() {
       <VideoGate
         uid={uid}
         role="support_worker"
-        videoUrl="/videos/support-worker-intro.mp4"
+        videoUrl="/videos/support-workers.mov"
       >
         <FormBuilder uid={uid} type="support_worker_monitoring" />
       </VideoGate>

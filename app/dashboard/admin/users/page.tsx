@@ -43,6 +43,7 @@ type Assignment = {
 const ROLE_OPTIONS = [
   { value: "participant", label: "Participant" },
   { value: "fitness_partner", label: "Fitness Partner" },
+  { value: "support_worker", label: "Support Worker" }, // ⬅️ new
   { value: "service_provider", label: "Service Provider" },
   { value: "coordinator", label: "Coordinator" },
   { value: "admin", label: "Admin" },
@@ -73,6 +74,8 @@ function RoleBadge({ role }: { role?: string | null }) {
       ? "bg-amber-500/15 text-amber-700 border-amber-300/50"
       : role === "fitness_partner"
       ? "bg-cyan-500/15 text-cyan-700 border-cyan-300/50"
+      : role === "support_worker" // ⬅️ new
+      ? "bg-teal-500/15 text-teal-700 border-teal-300/50" // ⬅️ new
       : role === "participant"
       ? "bg-emerald-500/15 text-emerald-700 border-emerald-300/50"
       : "bg-black/[0.04] text-slate-700 border-slate-200";

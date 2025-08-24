@@ -22,6 +22,9 @@ import {
   getDownloadURL,
 } from "firebase/storage";
 
+/* ──────────────────────────────────────────────────────────────
+   Types
+────────────────────────────────────────────────────────────── */
 type UserLite = {
   id: string;
   displayName?: string | null;
@@ -34,6 +37,95 @@ type Assignment = {
   programTitle?: string | null;
 };
 
+/* ──────────────────────────────────────────────────────────────
+   Small UI primitives
+────────────────────────────────────────────────────────────── */
+function Section({
+  title,
+  subtitle,
+  children,
+}: {
+  title: string;
+  subtitle?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <section className="rounded-2xl border border-white/10 bg-slate-900/40 p-4 md:p-5">
+      <header className="mb-3">
+        <h3 className="text-base md:text-lg font-semibold">{title}</h3>
+        {subtitle ? (
+          <p className="text-xs md:text-sm text-white/60 mt-0.5">{subtitle}</p>
+        ) : null}
+      </header>
+      {children}
+    </section>
+  );
+}
+
+function Field({
+  label,
+  required,
+  hint,
+  error,
+  children,
+}: {
+  label: string;
+  required?: boolean;
+  hint?: string;
+  error?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="space-y-1.5">
+      <label className="text-sm text-white/80 inline-flex items-center gap-1">
+        {label}
+        {required && (
+          <span className="inline-flex items-center rounded-md bg-rose-500/15 text-rose-300 px-1.5 py-0.5 text-[11px]">
+            Required
+          </span>
+        )}
+      </label>
+      {children}
+      {hint && !error && (
+        <p className="text-[11px] text-white/50 leading-snug">{hint}</p>
+      )}
+      {error && (
+        <p className="text-[11px] text-rose-300 leading-snug">{error}</p>
+      )}
+    </div>
+  );
+}
+
+function Row({
+  children,
+  cols = 2,
+}: {
+  children: React.ReactNode;
+  cols?: 1 | 2 | 3 | 4;
+}) {
+  const map: Record<number, string> = {
+    1: "md:grid-cols-1",
+    2: "md:grid-cols-2",
+    3: "md:grid-cols-3",
+    4: "md:grid-cols-4",
+  };
+  return <div className={`grid gap-3 ${map[cols]}`}>{children}</div>;
+}
+
+function Progress({ pct }: { pct: number }) {
+  return (
+    <div className="h-2 w-full rounded-full bg-white/10 overflow-hidden">
+      <div
+        className="h-full bg-emerald-500 transition-[width] duration-200"
+        style={{ width: `${Math.min(Math.max(pct, 0), 100)}%` }}
+      />
+    </div>
+  );
+}
+
+/* ──────────────────────────────────────────────────────────────
+   Main component
+────────────────────────────────────────────────────────────── */
 export default function SupportWorkerMonitoringForm({
   supportUid,
 }: {
@@ -145,6 +237,15 @@ export default function SupportWorkerMonitoringForm({
     return eh * 60 + em - (sh * 60 + sm);
   }
 
+  const durationMinutes = useMemo(
+    () => minutesBetween(startTime, endTime),
+    [startTime, endTime]
+  );
+  const durationLabel =
+    durationMinutes !== null && durationMinutes > 0
+      ? `${Math.floor(durationMinutes / 60)}h ${durationMinutes % 60}m`
+      : "—";
+
   function canSubmit() {
     const mins = minutesBetween(startTime, endTime);
     return (
@@ -174,7 +275,7 @@ export default function SupportWorkerMonitoringForm({
       if (p.exists()) programTitle = (p.data() as any)?.title || programId;
     } catch {}
 
-    const durationMinutes = minutesBetween(startTime, endTime) || 0;
+    const durationMinutesValue = minutesBetween(startTime, endTime) || 0;
 
     // Create form doc
     const formRef = await addDoc(collection(db, "forms"), {
@@ -187,7 +288,7 @@ export default function SupportWorkerMonitoringForm({
       monitoringDate, // YYYY-MM-DD
       shiftStart: startTime, // HH:MM
       shiftEnd: endTime, // HH:MM
-      durationMinutes, // computed
+      durationMinutes: durationMinutesValue, // computed
       location: location || null,
       kmsTraveled: kmsTraveled === "" ? null : Number(kmsTraveled),
 
@@ -225,6 +326,7 @@ export default function SupportWorkerMonitoringForm({
               const pct = Math.round(
                 (snap.bytesTransferred / snap.totalBytes) * 100
               );
+              // smooth overall %
               setUploadPct(Math.round(((done + pct / 100) / total) * 100));
             },
             reject,
@@ -266,258 +368,344 @@ export default function SupportWorkerMonitoringForm({
     alert("Submitted!");
   }
 
-  return (
-    <form className="space-y-4" onSubmit={handleSubmit}>
-      {/* Who */}
-      <section className="grid md:grid-cols-2 gap-3">
-        <Field label="Participant" required>
-          <select
-            required
-            className="w-full rounded-lg bg-slate-900 border border-white/10 p-2"
-            value={participantId}
-            onChange={(e) => {
-              setParticipantId(e.target.value);
-              setProgramId("");
-            }}
-          >
-            <option value="">Select participant</option>
-            {participantOptions.map((o) => (
-              <option key={o.id} value={o.id}>
-                {o.label}
-              </option>
-            ))}
-          </select>
-        </Field>
+  /* ──────────────────────────────────────────────────────────
+     Render
+  ─────────────────────────────────────────────────────────── */
+  const timeError =
+    startTime && endTime && (durationMinutes ?? 0) <= 0
+      ? "End time must be after start time."
+      : undefined;
 
-        <Field label="Program" required>
-          <select
+  return (
+    <form className="space-y-5" onSubmit={handleSubmit}>
+      {/* Page Title */}
+      <div className="flex items-center justify-between gap-3">
+        <div>
+          <h2 className="text-xl md:text-2xl font-semibold">
+            Support Worker Monitoring
+          </h2>
+          <p className="text-sm text-white/60">
+            Log your session details, activities, and outcomes. Fields marked
+            “Required” must be completed.
+          </p>
+        </div>
+
+        {/* Quick Summary Chip */}
+        <div className="hidden md:flex items-center gap-2 rounded-xl border border-white/10 bg-slate-900/40 px-3 py-2">
+          <div className="text-xs text-white/60">Duration</div>
+          <div className="text-sm font-medium">{durationLabel}</div>
+        </div>
+      </div>
+
+      {/* Who & Program */}
+      <Section title="Who" subtitle="Select the participant and program.">
+        <Row cols={2}>
+          <Field label="Participant" required>
+            <select
+              required
+              className="w-full rounded-lg bg-slate-900 border border-white/10 p-2"
+              value={participantId}
+              onChange={(e) => {
+                setParticipantId(e.target.value);
+                setProgramId("");
+              }}
+            >
+              <option value="">Select participant</option>
+              {participantOptions.map((o) => (
+                <option key={o.id} value={o.id}>
+                  {o.label}
+                </option>
+              ))}
+            </select>
+          </Field>
+
+          <Field
+            label="Program"
             required
-            className="w-full rounded-lg bg-slate-900 border border-white/10 p-2"
-            value={programId}
-            onChange={(e) => setProgramId(e.target.value)}
-            disabled={!participantId}
+            hint={!participantId ? "Select a participant first." : undefined}
           >
-            <option value="">
-              {participantId ? "Select program" : "Select participant first"}
-            </option>
-            {programOptions.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.title}
+            <select
+              required
+              className="w-full rounded-lg bg-slate-900 border border-white/10 p-2"
+              value={programId}
+              onChange={(e) => setProgramId(e.target.value)}
+              disabled={!participantId}
+            >
+              <option value="">
+                {participantId ? "Select program" : "Select participant first"}
               </option>
-            ))}
-          </select>
-        </Field>
-      </section>
+              {programOptions.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.title}
+                </option>
+              ))}
+            </select>
+          </Field>
+        </Row>
+      </Section>
 
       {/* Shift */}
-      <section className="grid md:grid-cols-4 gap-3">
-        <Field label="Monitoring Date" required>
-          <input
-            type="date"
-            required
-            className="w-full rounded-lg bg-slate-900 border border-white/10 p-2"
-            value={monitoringDate}
-            onChange={(e) => setMonitoringDate(e.target.value)}
-          />
-        </Field>
-        <Field label="Start Time" required>
-          <input
-            type="time"
-            required
-            className="w-full rounded-lg bg-slate-900 border border-white/10 p-2"
-            value={startTime}
-            onChange={(e) => setStartTime(e.target.value)}
-          />
-        </Field>
-        <Field label="End Time" required>
-          <input
-            type="time"
-            required
-            className="w-full rounded-lg bg-slate-900 border border-white/10 p-2"
-            value={endTime}
-            onChange={(e) => setEndTime(e.target.value)}
-          />
-        </Field>
-        <Field label="Location">
-          <input
-            className="w-full rounded-lg bg-slate-900 border border-white/10 p-2"
-            placeholder="Home / Community / Clinic…"
-            value={location}
-            onChange={(e) => setLocation(e.target.value)}
-          />
-        </Field>
-      </section>
+      <Section
+        title="Shift"
+        subtitle="Provide date, times, and where the support occurred."
+      >
+        <Row cols={4}>
+          <Field label="Monitoring Date" required>
+            <input
+              type="date"
+              required
+              className="w-full rounded-lg bg-slate-900 border border-white/10 p-2"
+              value={monitoringDate}
+              onChange={(e) => setMonitoringDate(e.target.value)}
+            />
+          </Field>
+
+          <Field label="Start Time" required>
+            <input
+              type="time"
+              required
+              className="w-full rounded-lg bg-slate-900 border border-white/10 p-2"
+              value={startTime}
+              onChange={(e) => setStartTime(e.target.value)}
+              aria-invalid={!!timeError}
+            />
+          </Field>
+
+          <Field label="End Time" required error={timeError}>
+            <input
+              type="time"
+              required
+              className="w-full rounded-lg bg-slate-900 border border-white/10 p-2"
+              value={endTime}
+              onChange={(e) => setEndTime(e.target.value)}
+              aria-invalid={!!timeError}
+            />
+          </Field>
+
+          <Field label="Location" hint="e.g., Home / Community / Clinic">
+            <input
+              className="w-full rounded-lg bg-slate-900 border border-white/10 p-2"
+              placeholder="Home / Community / Clinic…"
+              value={location}
+              onChange={(e) => setLocation(e.target.value)}
+            />
+          </Field>
+        </Row>
+
+        {/* Duration preview (mobile-visible) */}
+        <div className="mt-3 md:hidden">
+          <div className="flex items-center gap-2 rounded-lg bg-white/5 px-3 py-2">
+            <span className="text-xs text-white/60">Duration</span>
+            <span className="text-sm font-medium">{durationLabel}</span>
+          </div>
+        </div>
+      </Section>
 
       {/* Content */}
-      <section className="grid md:grid-cols-2 gap-3">
-        <Field label="Activities Performed" required>
-          <textarea
-            rows={4}
+      <Section
+        title="Session Details"
+        subtitle="Describe what was done and how the participant engaged."
+      >
+        <Row cols={2}>
+          <Field
+            label="Activities Performed"
             required
-            className="w-full rounded-lg bg-slate-900 border border-white/10 p-2"
-            placeholder="What activities or supports were provided?"
-            value={activitiesPerformed}
-            onChange={(e) => setActivitiesPerformed(e.target.value)}
-          />
-        </Field>
-        <div className="grid gap-3">
-          <Field label="Engagement Rating (1–5)" required>
-            <select
+            hint="What activities or supports were provided?"
+          >
+            <textarea
+              rows={5}
               required
               className="w-full rounded-lg bg-slate-900 border border-white/10 p-2"
-              value={engagementRating}
-              onChange={(e) =>
-                setEngagementRating(
-                  e.target.value === "" ? "" : Number(e.target.value)
-                )
-              }
-            >
-              <option value="">Select</option>
-              {[1, 2, 3, 4, 5].map((n) => (
-                <option key={n} value={n}>
-                  {n}
-                </option>
-              ))}
-            </select>
+              placeholder="e.g., community access, meal prep, transport, skills training…"
+              value={activitiesPerformed}
+              onChange={(e) => setActivitiesPerformed(e.target.value)}
+            />
           </Field>
-          <Field label="Mood Rating (1–5)" required>
-            <select
-              required
-              className="w-full rounded-lg bg-slate-900 border border-white/10 p-2"
-              value={moodRating}
-              onChange={(e) =>
-                setMoodRating(
-                  e.target.value === "" ? "" : Number(e.target.value)
-                )
-              }
-            >
-              <option value="">Select</option>
-              {[1, 2, 3, 4, 5].map((n) => (
-                <option key={n} value={n}>
-                  {n}
-                </option>
-              ))}
-            </select>
-          </Field>
-        </div>
-      </section>
 
-      <section className="grid md:grid-cols-3 gap-3">
-        <Field label="Goals Worked On">
-          <textarea
-            rows={3}
-            className="w-full rounded-lg bg-slate-900 border border-white/10 p-2"
-            placeholder="Which care goals were targeted?"
-            value={goalsWorkedOn}
-            onChange={(e) => setGoalsWorkedOn(e.target.value)}
-          />
-        </Field>
-        <Field label="Outcomes Observed">
-          <textarea
-            rows={3}
-            className="w-full rounded-lg bg-slate-900 border border-white/10 p-2"
-            placeholder="Results, improvements, challenges…"
-            value={outcomesObserved}
-            onChange={(e) => setOutcomesObserved(e.target.value)}
-          />
-        </Field>
-        <Field label="Risks / Issues">
-          <textarea
-            rows={3}
-            className="w-full rounded-lg bg-slate-900 border border-white/10 p-2"
-            placeholder="Any issues, risks, behaviours of concern…"
-            value={risksIssues}
-            onChange={(e) => setRisksIssues(e.target.value)}
-          />
-        </Field>
-      </section>
+          <div className="grid gap-3">
+            <Field label="Engagement Rating (1–5)" required>
+              <select
+                required
+                className="w-full rounded-lg bg-slate-900 border border-white/10 p-2"
+                value={engagementRating}
+                onChange={(e) =>
+                  setEngagementRating(
+                    e.target.value === "" ? "" : Number(e.target.value)
+                  )
+                }
+              >
+                <option value="">Select</option>
+                {[1, 2, 3, 4, 5].map((n) => (
+                  <option key={n} value={n}>
+                    {n}
+                  </option>
+                ))}
+              </select>
+            </Field>
+
+            <Field label="Mood Rating (1–5)" required>
+              <select
+                required
+                className="w-full rounded-lg bg-slate-900 border border-white/10 p-2"
+                value={moodRating}
+                onChange={(e) =>
+                  setMoodRating(
+                    e.target.value === "" ? "" : Number(e.target.value)
+                  )
+                }
+              >
+                <option value="">Select</option>
+                {[1, 2, 3, 4, 5].map((n) => (
+                  <option key={n} value={n}>
+                    {n}
+                  </option>
+                ))}
+              </select>
+            </Field>
+          </div>
+        </Row>
+
+        <Row cols={3}>
+          <Field label="Goals Worked On" hint="Which care goals were targeted?">
+            <textarea
+              rows={3}
+              className="w-full rounded-lg bg-slate-900 border border-white/10 p-2"
+              placeholder="Short description of goals addressed…"
+              value={goalsWorkedOn}
+              onChange={(e) => setGoalsWorkedOn(e.target.value)}
+            />
+          </Field>
+
+          <Field
+            label="Outcomes Observed"
+            hint="Results, improvements, challenges"
+          >
+            <textarea
+              rows={3}
+              className="w-full rounded-lg bg-slate-900 border border-white/10 p-2"
+              placeholder="e.g., increased participation, improved mood…"
+              value={outcomesObserved}
+              onChange={(e) => setOutcomesObserved(e.target.value)}
+            />
+          </Field>
+
+          <Field
+            label="Risks / Issues"
+            hint="Any issues, risks, behaviours of concern"
+          >
+            <textarea
+              rows={3}
+              className="w-full rounded-lg bg-slate-900 border border-white/10 p-2"
+              placeholder="Describe risks or incidents to monitor…"
+              value={risksIssues}
+              onChange={(e) => setRisksIssues(e.target.value)}
+            />
+          </Field>
+        </Row>
+      </Section>
 
       {/* Incident */}
-      <section className="grid md:grid-cols-3 gap-3">
-        <Field label="Incident Reported?" required>
-          <select
-            required
-            className="w-full rounded-lg bg-slate-900 border border-white/10 p-2"
-            value={incidentReported}
-            onChange={(e) =>
-              setIncidentReported(e.target.value as "no" | "yes")
+      <Section
+        title="Incident"
+        subtitle="Record whether an incident was reported."
+      >
+        <Row cols={3}>
+          <Field label="Incident Reported?" required>
+            <select
+              required
+              className="w-full rounded-lg bg-slate-900 border border-white/10 p-2"
+              value={incidentReported}
+              onChange={(e) =>
+                setIncidentReported(e.target.value as "no" | "yes")
+              }
+            >
+              <option value="no">No</option>
+              <option value="yes">Yes</option>
+            </select>
+          </Field>
+
+          <Field
+            label="Incident Details"
+            hint={
+              incidentReported === "yes"
+                ? undefined
+                : "Disabled unless 'Yes' selected"
             }
           >
-            <option value="no">No</option>
-            <option value="yes">Yes</option>
-          </select>
-        </Field>
+            <input
+              className="w-full rounded-lg bg-slate-900 border border-white/10 p-2"
+              placeholder="If yes, describe briefly"
+              value={incidentDetails}
+              onChange={(e) => setIncidentDetails(e.target.value)}
+              disabled={incidentReported !== "yes"}
+            />
+          </Field>
 
-        <Field label="Incident Details">
-          <input
-            className="w-full rounded-lg bg-slate-900 border border-white/10 p-2"
-            placeholder="If yes, describe briefly"
-            value={incidentDetails}
-            onChange={(e) => setIncidentDetails(e.target.value)}
-            disabled={incidentReported !== "yes"}
-          />
-        </Field>
-
-        <Field label="KMs Traveled">
-          <input
-            type="number"
-            min={0}
-            step={0.1}
-            className="w-full rounded-lg bg-slate-900 border border-white/10 p-2"
-            placeholder="e.g., 12.5"
-            value={kmsTraveled}
-            onChange={(e) =>
-              setKmsTraveled(
-                e.target.value === "" ? "" : Number(e.target.value)
-              )
-            }
-          />
-        </Field>
-      </section>
+          <Field
+            label="KMs Traveled"
+            hint="For mileage reimbursement if applicable"
+          >
+            <input
+              type="number"
+              min={0}
+              step={0.1}
+              className="w-full rounded-lg bg-slate-900 border border-white/10 p-2"
+              placeholder="e.g., 12.5"
+              value={kmsTraveled}
+              onChange={(e) =>
+                setKmsTraveled(
+                  e.target.value === "" ? "" : Number(e.target.value)
+                )
+              }
+            />
+          </Field>
+        </Row>
+      </Section>
 
       {/* Attachments */}
-      <section className="space-y-2">
-        <div className="text-sm text-white/80">Attachments (optional)</div>
-        <input
-          type="file"
-          multiple
-          className="block w-full text-sm file:mr-3 file:rounded-md file:border file:border-white/10 file:bg-white/10 file:px-3 file:py-1.5 file:hover:bg-white/20"
-          onChange={(e) => setFiles(e.target.files)}
-        />
-        {uploadPct > 0 && uploadPct < 100 && (
-          <div className="text-xs text-white/60">Uploading… {uploadPct}%</div>
-        )}
-      </section>
+      <Section
+        title="Attachments"
+        subtitle="Optional supporting files (photos, PDFs, receipts)."
+      >
+        <div className="space-y-2">
+          <input
+            type="file"
+            multiple
+            className="block w-full text-sm file:mr-3 file:rounded-md file:border file:border-white/10 file:bg-white/10 file:px-3 file:py-1.5 file:hover:bg-white/20"
+            onChange={(e) => setFiles(e.target.files)}
+          />
+          {uploadPct > 0 && uploadPct < 100 && (
+            <div className="space-y-1">
+              <div className="text-xs text-white/60">
+                Uploading files… {uploadPct}%
+              </div>
+              <Progress pct={uploadPct} />
+            </div>
+          )}
+        </div>
+      </Section>
 
-      {/* Submit */}
-      <div className="pt-2">
-        <button
-          disabled={saving || !canSubmit()}
-          className="px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 disabled:opacity-60"
-        >
-          {saving ? "Submitting…" : "Submit Monitoring"}
-        </button>
+      {/* Sticky Submit Bar */}
+      <div className="sticky bottom-2 z-10">
+        <div className="rounded-2xl border border-white/10 bg-slate-900/70 backdrop-blur px-3 py-2 md:px-4 md:py-3 flex flex-col md:flex-row md:items-center gap-2 md:gap-4">
+          <div className="flex-1 text-xs md:text-sm text-white/70">
+            <span className="hidden sm:inline">Ready to submit?</span> Ensure
+            times are correct and all required fields are filled.
+          </div>
+          <div className="flex items-center gap-3">
+            <div className="text-xs text-white/60 hidden sm:block">
+              Duration: <span className="font-medium">{durationLabel}</span>
+            </div>
+            <button
+              type="submit"
+              disabled={saving || !canSubmit()}
+              className="px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 disabled:opacity-60 disabled:cursor-not-allowed font-medium"
+            >
+              {saving ? "Submitting…" : "Submit Monitoring"}
+            </button>
+          </div>
+        </div>
       </div>
     </form>
-  );
-}
-
-/* Small field wrapper */
-function Field({
-  label,
-  required,
-  children,
-}: {
-  label: string;
-  required?: boolean;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="space-y-1">
-      <label className="text-sm text-white/80">
-        {label} {required && <span className="text-rose-400">*</span>}
-      </label>
-      {children}
-    </div>
   );
 }
