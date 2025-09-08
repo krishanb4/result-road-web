@@ -145,10 +145,9 @@ const SeasonalThemeContext = createContext<
 // Function to automatically detect season based on current month
 function detectSeasonFromDate(): SeasonType {
   const month = new Date().getMonth(); // 0-11
-
-  if (month >= 2 && month <= 7) return "spring"; // March, April, May
-  if (month >= 5 && month <= 7) return "summer"; // June, July, August
-  if (month >= 8 && month <= 10) return "autumn"; // September, October, November
+  if (month >= 3 && month <= 5) return "autumn"; // September, October, November
+  if (month >= 8 && month <= 11) return "spring"; // March, April, May
+  if (month >= 12 && month <= 2) return "summer"; // June, July, August
   return "winter"; // December, January, February
 }
 
